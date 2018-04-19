@@ -17,6 +17,7 @@ const endpointSendPhoto = "/sendPhoto"
 const endpointSendMessage = "/sendMessage"
 const endpointGetUpdates = "/getUpdates"
 const endpointEditMessageReplyMarkup = "/editMessageReplyMarkup"
+const likeBtnText = "❤️ Like"
 
 type apiImpl struct {
 	client         *http.Client
@@ -92,8 +93,8 @@ type UpdateRequestBody struct {
 
 func (api apiImpl) UpdateLikeButton(chatID int, messageID int, count int) error {
 	keyboard := Keyboard{
-		fmt.Sprintf("❤️ Like (%d)", count),
-		"{like: true}",
+		fmt.Sprintf("%s (%d)", likeBtnText, count),
+		"like",
 	}
 
 	replyMarkup := ReplyMarkup{[][]Keyboard{[]Keyboard{keyboard}}}
@@ -187,7 +188,7 @@ func (api apiImpl) ConsumeMedias(medias []*model.Media) {
 func (api apiImpl) sendByUrl(media *model.Media) error {
 	var endpoint string
 	var requestBody interface{}
-	keyboard := Keyboard{"❤️ Like", "like"}
+	keyboard := Keyboard{likeBtnText, "like"}
 	replyMarkup := ReplyMarkup{[][]Keyboard{[]Keyboard{keyboard}}}
 	replyMarkupJSON, err := json.Marshal(replyMarkup)
 
