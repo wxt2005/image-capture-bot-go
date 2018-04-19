@@ -1,0 +1,24 @@
+telegram:
+  bot_token:
+  channel_name:
+
+twitter:
+  consumer_key:
+  consumer_secret:
+  access_token_key:
+  access_token_secret:
+
+dropbox:
+  access_token:
+  save_path: "/test"
+
+pixiv:
+  username:
+  password:
+  client_id:
+  client_secret:
+
+db:
+  db_path: ./external/bot.db
+  url_bucket: url
+  like_bucket: like
