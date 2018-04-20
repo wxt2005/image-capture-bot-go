@@ -52,8 +52,21 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 	}
 
+	var finalMedias []*model.Media
 	urls := telegram.ExtractUrl(m)
 	var duplicates []string
+
+	if m.Message.Photo != nil {
+		medias, remains, _ := telegramService.ExtractMediaFromMsg(&m)
+		if len(medias) > 0 {
+			finalMedias = append(finalMedias, medias...)
+		}
+
+		if len(remains) > 0 {
+			urls = append(urls, remains...)
+		}
+	}
+
 	if skipCheckDuplicate != true {
 		urls, duplicates = extractDuplicate(&urls)
 	}
@@ -62,7 +75,6 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		go sendDuplicateMessages(&duplicates, m.Message.Chat.ID, m.Message.MessageID)
 	}
 
-	var finalMedias []*model.Media
 	imageServices := []model.ImageService{
 		danbooru.New(),
 		pixiv.New(),
@@ -72,10 +84,6 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	consumerServices := []model.ConsumerService{
 		dropbox.New(),
 		model.ConsumerService(telegramService),
-	}
-
-	if m.Message.Photo != nil {
-		finalMedias, _, _ = telegramService.ExtractMediaFromMsg(&m)
 	}
 
 	for _, imageService := range imageServices {

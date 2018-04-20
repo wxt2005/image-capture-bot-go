@@ -17,7 +17,7 @@ type Message struct {
 	MessageID       int `json:"message_id"`
 	Text            string
 	Caption         string
-	CaptionEntities []Entity
+	CaptionEntities []Entity `json:"caption_entities"`
 	Entities        []Entity
 	Chat            struct {
 		ID int

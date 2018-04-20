@@ -13,6 +13,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wxt2005/image_capture_bot_go/model"
+	"github.com/wxt2005/image_capture_bot_go/service/danbooru"
+	"github.com/wxt2005/image_capture_bot_go/service/pixiv"
+	"github.com/wxt2005/image_capture_bot_go/service/twitter"
 )
 
 const endpointSendVideo = "/sendVideo"
@@ -57,19 +60,26 @@ type Service interface {
 // 	return updates.Result
 // }
 
-func ExtractUrl(message model.IncomingMessage) []string {
-	text := message.Message.Text
+func ExtractURLWithEntities(text string, entities []model.Entity) []string {
 	var urls []string
 
-	for _, entry := range message.Message.Entities {
-		if entry.Type == "url" || entry.Type == "text_link" {
-			start := entry.Offset
-			end := entry.Offset + entry.Length
+	if len(text) == 0 {
+		return nil
+	}
+
+	for _, entity := range entities {
+		if entity.Type == "url" || entity.Type == "text_link" {
+			start := entity.Offset
+			end := entity.Offset + entity.Length
 			urls = append(urls, string([]rune(text)[start:end]))
 		}
 	}
 
 	return urls
+}
+
+func ExtractUrl(message model.IncomingMessage) []string {
+	return ExtractURLWithEntities(message.Message.Text, message.Message.Entities)
 }
 
 type MessageRequestBody struct {
@@ -322,6 +332,22 @@ type fileRes struct {
 func (api apiImpl) ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Media, []string, error) {
 	var result []*model.Media
 	var remains []string
+
+	if captionURLs := ExtractURLWithEntities(msg.Message.Caption, msg.Message.CaptionEntities); captionURLs != nil {
+		for _, url := range captionURLs {
+			_, danbooruValid := danbooru.CheckValid(url)
+			_, twitterValid := twitter.CheckValid(url)
+			_, pixivValid := pixiv.CheckValid(url)
+
+			if danbooruValid || twitterValid || pixivValid {
+				remains = append(remains, url)
+			}
+		}
+
+		if len(remains) == len(captionURLs) {
+			return result, remains, nil
+		}
+	}
 
 	photo := getLargestPhoto(msg)
 	fileID := photo.FileID
