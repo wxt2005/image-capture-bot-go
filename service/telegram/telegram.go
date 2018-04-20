@@ -56,10 +56,10 @@ func ExtractUrl(message model.IncomingMessage) []string {
 	urls := []string{}
 
 	for _, entry := range message.Message.Entities {
-		if entry.Type == "url" {
+		if entry.Type == "url" || entry.Type == "text_link" {
 			start := entry.Offset
 			end := entry.Offset + entry.Length
-			urls = append(urls, text[start:end])
+			urls = append(urls, string([]rune(text)[start:end]))
 		}
 	}
 
