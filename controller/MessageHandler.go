@@ -15,6 +15,7 @@ import (
 	"github.com/wxt2005/image_capture_bot_go/service/dropbox"
 	"github.com/wxt2005/image_capture_bot_go/service/pixiv"
 	"github.com/wxt2005/image_capture_bot_go/service/telegram"
+	"github.com/wxt2005/image_capture_bot_go/service/tumblr"
 	"github.com/wxt2005/image_capture_bot_go/service/twitter"
 )
 
@@ -63,6 +64,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		danbooru.New(),
 		pixiv.New(),
 		twitter.New(),
+		tumblr.New(),
 	}
 	consumerServices := []model.ConsumerService{
 		dropbox.New(),
