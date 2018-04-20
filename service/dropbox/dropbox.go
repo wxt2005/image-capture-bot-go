@@ -24,6 +24,7 @@ func (api apiImpl) ConsumeMedias(medias []*model.Media) {
 		if media.File != nil {
 			commitInfo := *files.NewCommitInfo(path)
 			commitInfo.Autorename = true
+			commitInfo.Mute = true
 			reader := bytes.NewReader(*media.File)
 			_, err := db.Upload(&commitInfo, reader)
 			if err != nil {
@@ -37,11 +38,8 @@ func (api apiImpl) ConsumeMedias(medias []*model.Media) {
 				Path: path,
 				Url:  media.URL,
 			}
-			if _, err := db.SaveUrl(&arg); err != nil {
-				log.WithFields(log.Fields{
-					"error": err,
-				}).Error("Dropbox save url failed")
-			}
+			// omit error for now, seems like a bug
+			db.SaveUrl(&arg)
 		}
 	}
 }

@@ -14,6 +14,7 @@ import (
 func init() {
 	env := os.Getenv("ENV")
 	if env == "DEBUG" || env == "LOCAL" {
+		log.SetLevel(log.DebugLevel)
 		// for debug, ignore ssl verify
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 		log.Info("Disabled TLS certificate verify")
@@ -47,13 +48,12 @@ func main() {
 	}
 
 	http.HandleFunc("/api/"+viper.GetString("telegram.bot_token")+"/message", controller.MessageHandler)
+	log.WithFields(log.Fields{
+		"port": port,
+	}).Info("Server listening...")
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.WithFields(log.Fields{
 			"port": port,
 		}).Panic("failed to listen port")
 	}
-
-	log.WithFields(log.Fields{
-		"port": port,
-	}).Info("Server listening...")
 }
