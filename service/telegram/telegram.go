@@ -240,7 +240,7 @@ func (api apiImpl) sendByStream(media *model.Media) error {
 	var endpoint string
 	buf := new(bytes.Buffer)
 	w := multipart.NewWriter(buf)
-	keyboard := Keyboard{"Like", "like"}
+	keyboard := Keyboard{likeBtnText, "like"}
 	replyMarkup := ReplyMarkup{[][]Keyboard{[]Keyboard{keyboard}}}
 	replyMarkupJSON, err := json.Marshal(replyMarkup)
 	if err != nil {
