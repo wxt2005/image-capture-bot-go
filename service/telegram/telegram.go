@@ -53,7 +53,7 @@ type Service interface {
 
 func ExtractUrl(message model.IncomingMessage) []string {
 	text := message.Message.Text
-	urls := []string{}
+	var urls []string
 
 	for _, entry := range message.Message.Entities {
 		if entry.Type == "url" || entry.Type == "text_link" {

@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/wxt2005/image_capture_bot_go/db"
 	"github.com/wxt2005/image_capture_bot_go/model"
+	"github.com/wxt2005/image_capture_bot_go/service/danbooru"
 	"github.com/wxt2005/image_capture_bot_go/service/dropbox"
 	"github.com/wxt2005/image_capture_bot_go/service/pixiv"
 	"github.com/wxt2005/image_capture_bot_go/service/telegram"
@@ -59,6 +60,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	var finalMedias []*model.Media
 	imageServices := []model.ImageService{
+		danbooru.New(),
 		pixiv.New(),
 		twitter.New(),
 	}

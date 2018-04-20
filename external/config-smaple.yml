@@ -22,3 +22,7 @@ db:
   db_path: ./external/bot.db
   url_bucket: url
   like_bucket: like
+
+danbooru:
+  username:
+  key: 
