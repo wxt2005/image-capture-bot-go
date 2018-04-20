@@ -21,7 +21,10 @@ import (
 
 func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	telegramService := telegram.New()
-	body, _ := ioutil.ReadAll(r.Body)
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(500)
+	}
 	var m model.IncomingMessage
 	var cm model.CallbackMessage
 	skipCheckDuplicate := false
@@ -69,6 +72,10 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	consumerServices := []model.ConsumerService{
 		dropbox.New(),
 		model.ConsumerService(telegramService),
+	}
+
+	if m.Message.Photo != nil {
+		finalMedias, _, _ = telegramService.ExtractMediaFromMsg(&m)
 	}
 
 	for _, imageService := range imageServices {

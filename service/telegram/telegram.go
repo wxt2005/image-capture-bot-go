@@ -3,9 +3,12 @@ package telegram
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -17,11 +20,13 @@ const endpointSendPhoto = "/sendPhoto"
 const endpointSendMessage = "/sendMessage"
 const endpointGetUpdates = "/getUpdates"
 const endpointEditMessageReplyMarkup = "/editMessageReplyMarkup"
+const endpointGetFile = "/getFile"
 const likeBtnText = "❤️ Like"
 
 type apiImpl struct {
 	client         *http.Client
 	chatID         string
+	token          string
 	endpointPrefix string
 }
 
@@ -30,6 +35,7 @@ type Service interface {
 	ConsumeMedias(medias []*model.Media)
 	// GetUpdates() []model.IncomingMessage
 	UpdateLikeButton(chatID int, messageID int, count int) error
+	ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Media, []string, error)
 }
 
 // func (api apiImpl) GetUpdates() []model.IncomingMessage {
@@ -196,12 +202,17 @@ func (api apiImpl) sendByUrl(media *model.Media) error {
 		return err
 	}
 
+	url := media.URL
+	if len(media.TGFileID) != 0 {
+		url = media.TGFileID
+	}
+
 	switch media.Type {
 	case "photo":
 		endpoint = endpointSendPhoto
 		requestBody = photoRequestBody{
 			api.chatID,
-			media.URL,
+			url,
 			media.Source,
 			string(replyMarkupJSON),
 		}
@@ -209,7 +220,7 @@ func (api apiImpl) sendByUrl(media *model.Media) error {
 		endpoint = endpointSendVideo
 		requestBody = videoRequestBody{
 			api.chatID,
-			media.URL,
+			url,
 			media.Source,
 			string(replyMarkupJSON),
 		}
@@ -281,10 +292,88 @@ func (api apiImpl) sendByStream(media *model.Media) error {
 	return nil
 }
 
+func getLargestPhoto(msg *model.IncomingMessage) *model.Photo {
+	maxH := 0
+	maxW := 0
+	var result *model.Photo
+
+	for _, photo := range msg.Message.Photo {
+		if photo.Width > maxW {
+			maxW = photo.Width
+			result = &photo
+		} else if photo.Height > maxH {
+			maxH = photo.Height
+			result = &photo
+		}
+	}
+
+	return result
+}
+
+type fileRes struct {
+	Ok     bool
+	Result struct {
+		FileID   string `json:"file_id"`
+		FileSize int    `json:"file_size"`
+		FilePath string `json:"file_path"`
+	}
+}
+
+func (api apiImpl) ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Media, []string, error) {
+	var result []*model.Media
+	var remains []string
+
+	photo := getLargestPhoto(msg)
+	fileID := photo.FileID
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s%s?file_id=%s", api.endpointPrefix, endpointGetFile, fileID), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	resp, err := api.client.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var m fileRes
+	if err := json.Unmarshal(body, &m); err != nil {
+		return nil, nil, err
+	}
+
+	filePath := m.Result.FilePath
+	if len(filePath) == 0 {
+		return nil, nil, errors.New("no result file path")
+	}
+
+	urlParts := strings.Split(filePath, "/")
+	fileName := urlParts[len(urlParts)-1]
+	fileURL := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", api.token, filePath)
+
+	media := model.Media{
+		FileName: fileName,
+		URL:      fileURL,
+		Type:     "photo", // support photo for now
+		Service:  "telegram",
+		TGFileID: fileID,
+	}
+
+	result = append(result, &media)
+
+	return result, remains, nil
+}
+
 func New() Service {
 	return apiImpl{
 		client:         &http.Client{},
 		chatID:         viper.GetString("telegram.channel_name"),
+		token:          viper.GetString("telegram.bot_token"),
 		endpointPrefix: "https://api.telegram.org/bot" + viper.GetString("telegram.bot_token"),
 	}
 }

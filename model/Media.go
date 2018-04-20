@@ -7,4 +7,5 @@ type Media struct {
 	Type     string  // photo, video
 	Source   string
 	Service  string
+	TGFileID string
 }
