@@ -22,10 +22,19 @@ type apiImpl struct {
 	Client *pixiv.Client
 }
 
-func getIDFromTweetURL(url string) int {
+func CheckValid(url string) ([]string, bool) {
 	re := regexp.MustCompile(`(?i)(?:www|touch)\.pixiv\.net.+illust_id=(\d+)`)
 	match := re.FindStringSubmatch(url)
 	if match == nil {
+		return nil, false
+	}
+
+	return match, true
+}
+
+func getIDFromTweetURL(url string) int {
+	match, ok := CheckValid(url)
+	if ok == false {
 		return 0
 	}
 	if id, error := strconv.Atoi(match[1]); error == nil {

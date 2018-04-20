@@ -18,10 +18,19 @@ type apiImpl struct {
 	Client *anaconda.TwitterApi
 }
 
-func getIDFromTweetURL(url string) int {
+func CheckValid(url string) ([]string, bool) {
 	re := regexp.MustCompile(`(?i)(?:www\.)?twitter\.com\/(.+?)\/status\/(\d+)`)
 	match := re.FindStringSubmatch(url)
 	if match == nil {
+		return nil, false
+	}
+
+	return match, true
+}
+
+func getIDFromTweetURL(url string) int {
+	match, ok := CheckValid(url)
+	if ok == false {
 		return 0
 	}
 	if url, error := strconv.Atoi(match[2]); error == nil {
