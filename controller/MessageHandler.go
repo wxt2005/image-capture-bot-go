@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 
 	"github.com/boltdb/bolt"
 	log "github.com/sirupsen/logrus"
@@ -67,6 +68,8 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	urls = clearUrls(&urls)
+
 	if skipCheckDuplicate != true {
 		urls, duplicates = extractDuplicate(&urls)
 	}
@@ -113,6 +116,26 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	header["Content-Type"] = []string{"application/json; charset=utf-8"}
 	jsonString, _ := json.Marshal(finalMedias)
 	fmt.Fprintf(w, string(jsonString))
+}
+
+func clearUrls(urls *[]string) (results []string) {
+	for _, url := range *urls {
+		// remove twitter s=xxx
+		twitterReg := regexp.MustCompile(`(?i)(https?:\/\/(?:www\.)?twitter\.com\/.+?\/status\/\d+)`)
+		twitterMatch := twitterReg.FindStringSubmatch(url)
+		if twitterMatch != nil {
+			results = append(results, twitterMatch[1])
+			log.WithFields(log.Fields{
+				"before": url,
+				"after":  twitterMatch[1],
+			}).Info("url cleared")
+			break
+		}
+
+		results = append(results, url)
+	}
+
+	return
 }
 
 func extractDuplicate(urls *[]string) (remains []string, duplicates []string) {
