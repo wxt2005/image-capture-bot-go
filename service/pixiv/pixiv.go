@@ -2,13 +2,16 @@ package pixiv
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/search2d/go-pixiv"
 	log "github.com/sirupsen/logrus"
@@ -177,13 +180,26 @@ func extractUgoira(pageURL string) *model.Media {
 }
 
 func New() model.ImageService {
+
+	time := time.Now().Format(time.RFC3339)
+	hash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c", time))))
+	headers := map[string]string{
+		"User-Agent":      "PixivAndroidApp/5.0.136 (Android 6.0; Google Pixel C - 6.0.0 - API 23 - 2560x1800)",
+		"Accept-Language": "en_US",
+		"App-OS":          "android",
+		"App-OS-Version":  "4.4.2",
+		"App-Version":     "5.0.136",
+		"X-Client-Time":   time,
+		"X-Client-Hash":   hash,
+	}
 	tokenProvider := &pixiv.OauthTokenProvider{Credential: pixiv.Credential{
 		Username:     viper.GetString("pixiv.username"),
 		Password:     viper.GetString("pixiv.password"),
 		ClientID:     viper.GetString("pixiv.client_id"),
 		ClientSecret: viper.GetString("pixiv.client_secret"),
-	}}
-	cli := &pixiv.Client{TokenProvider: tokenProvider}
+	}, Headers: headers}
+
+	cli := &pixiv.Client{TokenProvider: tokenProvider, Headers: headers}
 
 	return apiImpl{
 		Client: cli,
