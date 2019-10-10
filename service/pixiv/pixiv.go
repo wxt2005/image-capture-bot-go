@@ -26,8 +26,11 @@ type apiImpl struct {
 }
 
 func CheckValid(url string) ([]string, bool) {
-	re := regexp.MustCompile(`(?i)(?:www|touch)\.pixiv\.net.+illust_id=(\d+)`)
+	re := regexp.MustCompile(`(?i)(?:www|touch)\.pixiv\.net.+(?:illust_id=|artworks\/)(\d+)`)
 	match := re.FindStringSubmatch(url)
+	log.WithFields(log.Fields{
+		"match": match,
+	}).Info("Pixiv match")
 	if match == nil {
 		return nil, false
 	}
