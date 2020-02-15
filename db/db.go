@@ -1,22 +1,22 @@
 package db
 
 import (
-	"github.com/boltdb/bolt"
+	"github.com/etcd-io/bbolt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
-var DB *bolt.DB
+var DB *bbolt.DB
 
-func Init() (*bolt.DB, error) {
-	db, err := bolt.Open(viper.GetString("db.db_path"), 0600, nil)
+func Init() (*bbolt.DB, error) {
+	db, err := bbolt.Open(viper.GetString("db.db_path"), 0600, nil)
 	if err != nil {
 		return nil, err
 	}
 	var mainError error
 
 	// create bucket
-	db.Update(func(tx *bolt.Tx) error {
+	db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(viper.GetString("db.url_bucket")))
 		if err != nil {
 			log.WithFields(log.Fields{

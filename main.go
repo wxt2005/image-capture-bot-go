@@ -7,8 +7,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image_capture_bot_go/controller"
-	"github.com/wxt2005/image_capture_bot_go/db"
+	"github.com/wxt2005/image-capture-bot-go/controller"
+	"github.com/wxt2005/image-capture-bot-go/db"
 )
 
 func init() {

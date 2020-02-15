@@ -12,10 +12,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image_capture_bot_go/model"
-	"github.com/wxt2005/image_capture_bot_go/service/danbooru"
-	"github.com/wxt2005/image_capture_bot_go/service/pixiv"
-	"github.com/wxt2005/image_capture_bot_go/service/twitter"
+	"github.com/wxt2005/image-capture-bot-go/model"
+	"github.com/wxt2005/image-capture-bot-go/service/danbooru"
+	"github.com/wxt2005/image-capture-bot-go/service/pixiv"
+	"github.com/wxt2005/image-capture-bot-go/service/twitter"
 )
 
 const endpointSendVideo = "/sendVideo"

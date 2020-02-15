@@ -3,4 +3,5 @@ debug
 *.db
 app
 config.yml
-image_capture_bot_go
+image-capture-bot-go
+.vscode

@@ -8,7 +8,7 @@ import (
 	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox/files"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image_capture_bot_go/model"
+	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
 type apiImpl struct {

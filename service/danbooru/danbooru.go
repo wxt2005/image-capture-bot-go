@@ -11,8 +11,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image_capture_bot_go/model"
-	"github.com/wxt2005/image_capture_bot_go/service/twitter"
+	"github.com/wxt2005/image-capture-bot-go/model"
+	"github.com/wxt2005/image-capture-bot-go/service/twitter"
 )
 
 const endpointPrefix = "https://danbooru.donmai.us/posts/"

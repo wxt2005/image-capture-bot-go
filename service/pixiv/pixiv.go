@@ -16,7 +16,7 @@ import (
 	"github.com/search2d/go-pixiv"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image_capture_bot_go/model"
+	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
 const ugoiraVideoEndpoint = "http://ugoira.dataprocessingclub.org/convert"
