@@ -7,7 +7,7 @@ import (
 	"regexp"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/wxt2005/image_capture_bot_go/model"
+	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
 type apiImpl struct {

@@ -7,17 +7,17 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/boltdb/bolt"
+	"github.com/etcd-io/bbolt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image_capture_bot_go/db"
-	"github.com/wxt2005/image_capture_bot_go/model"
-	"github.com/wxt2005/image_capture_bot_go/service/danbooru"
-	"github.com/wxt2005/image_capture_bot_go/service/dropbox"
-	"github.com/wxt2005/image_capture_bot_go/service/pixiv"
-	"github.com/wxt2005/image_capture_bot_go/service/telegram"
-	"github.com/wxt2005/image_capture_bot_go/service/tumblr"
-	"github.com/wxt2005/image_capture_bot_go/service/twitter"
+	"github.com/wxt2005/image-capture-bot-go/db"
+	"github.com/wxt2005/image-capture-bot-go/model"
+	"github.com/wxt2005/image-capture-bot-go/service/danbooru"
+	"github.com/wxt2005/image-capture-bot-go/service/dropbox"
+	"github.com/wxt2005/image-capture-bot-go/service/pixiv"
+	"github.com/wxt2005/image-capture-bot-go/service/telegram"
+	"github.com/wxt2005/image-capture-bot-go/service/tumblr"
+	"github.com/wxt2005/image-capture-bot-go/service/twitter"
 )
 
 func MessageHandler(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +139,7 @@ func clearUrls(urls *[]string) (results []string) {
 }
 
 func extractDuplicate(urls *[]string) (remains []string, duplicates []string) {
-	db.DB.Batch(func(tx *bolt.Tx) error {
+	db.DB.Batch(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(viper.GetString("db.url_bucket")))
 
 		for _, url := range *urls {
@@ -171,7 +171,7 @@ func sendDuplicateMessages(urls *[]string, chatID int, messageID int) {
 }
 
 func saveLike(chatID int, messageID int, userID int) (count int, ok bool) {
-	db.DB.Batch(func(tx *bolt.Tx) error {
+	db.DB.Batch(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(viper.GetString("db.like_bucket")))
 		key := fmt.Sprintf("chat_%d_msg_%d", chatID, messageID)
 		var value []int

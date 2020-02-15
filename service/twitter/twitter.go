@@ -9,7 +9,7 @@ import (
 
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image_capture_bot_go/model"
+	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
 const mp4ContentType = "video/mp4"
