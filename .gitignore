@@ -5,3 +5,4 @@ app
 config.yml
 image-capture-bot-go
 .vscode
+tmp

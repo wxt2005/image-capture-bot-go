@@ -2,18 +2,21 @@
 
 a telegram bot to capture images from Twitter, Pixiv and other social media;
 
-## Dev
+## Devopment
 
 ```bash
+# fill config file
 cp ./external/config-sample.yml ./external/config.yml
-# fill blanks
 ```
 
-Use [gin](https://github.com/codegangsta/gin) to auto compile and reload server while developing.
+Use [air](https://github.com/cosmtrek/air) to auto compile and reload server in development.
 
 ```bash
-gin run main.go
-# http://localhost:3000/
+# install air
+go get -u github.com/cosmtrek/air
+# use air to enable hot reload
+air
+# endpoint is http://localhost:3000/
 ```
 
 ## Build Docker Image
