@@ -75,6 +75,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(duplicates) > 0 {
+		log.WithField("urls", duplicates).Debug("Duplicate url")
 		go sendDuplicateMessages(&duplicates, m.Message.Chat.ID, m.Message.MessageID)
 	}
 
