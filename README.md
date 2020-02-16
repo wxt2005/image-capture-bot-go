@@ -25,5 +25,5 @@ docker build -t image-capture-bot-go:0.0.1 .
 ## Run Docker Container
 
 ```bash
-docker run -it -p 3000:8080 -v /path/to/external:/go/src/github.com/wxt2005/image-capture-bot-go/external image-capture-bot-go:0.0.1
+docker run -it -p 3000:8080 -v /path/to/external:/go/image-capture-bot-go/external image-capture-bot-go:0.0.1
 ```
