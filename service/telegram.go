@@ -1,4 +1,4 @@
-package telegram
+package service
 
 import (
 	"bytes"
@@ -13,54 +13,42 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wxt2005/image-capture-bot-go/model"
-	"github.com/wxt2005/image-capture-bot-go/service/danbooru"
-	"github.com/wxt2005/image-capture-bot-go/service/pixiv"
-	"github.com/wxt2005/image-capture-bot-go/service/twitter"
 )
 
-const endpointSendVideo = "/sendVideo"
-const endpointSendPhoto = "/sendPhoto"
-const endpointSendMessage = "/sendMessage"
-const endpointGetUpdates = "/getUpdates"
-const endpointEditMessageReplyMarkup = "/editMessageReplyMarkup"
-const endpointGetFile = "/getFile"
-const likeBtnText = "❤️ Like"
+const telegramEndpointSendVideo = "/sendVideo"
+const telegramEndpointSendPhoto = "/sendPhoto"
+const telegramEndpointSendMessage = "/sendMessage"
+const telegramEndpointGetUpdates = "/getUpdates"
+const telegramEndpointEditMessageReplyMarkup = "/editMessageReplyMarkup"
+const telegramEndpointGetFile = "/getFile"
+const telegramLikeBtnText = "❤️ Like"
 
-type apiImpl struct {
+type TelegramService struct {
+	Service        Type
 	client         *http.Client
 	chatID         string
 	token          string
 	endpointPrefix string
 }
 
-type Service interface {
-	SendDuplicateMessage(url string, chatID int, messageID int) error
-	ConsumeMedias(medias []*model.Media)
-	// GetUpdates() []model.IncomingMessage
-	UpdateLikeButton(chatID int, messageID int, count int) error
-	ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Media, []string, error)
+func NewTelegramService() *TelegramService {
+	return &TelegramService{
+		Service:        Telegram,
+		client:         &http.Client{},
+		chatID:         viper.GetString("telegram.channel_name"),
+		token:          viper.GetString("telegram.bot_token"),
+		endpointPrefix: "https://api.telegram.org/bot" + viper.GetString("telegram.bot_token"),
+	}
 }
 
-// func (api apiImpl) GetUpdates() []model.IncomingMessage {
-// 	updates := model.Updates{}
-//
-// 	req, err := http.NewRequest("POST", api.endpointPrefix+endpointGetUpdates, nil)
-// 	req.Header.Set("Content-Type", "application/json")
-//
-// 	resp, err := api.client.Do(req)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	defer resp.Body.Close()
-//
-// 	fmt.Println("response Status:", resp.Status)
-// 	body, _ := ioutil.ReadAll(resp.Body)
-// 	fmt.Println("response Body:", string(body))
-// 	json.Unmarshal(body, &updates)
-// 	return updates.Result
+// type Service interface {
+// 	SendDuplicateMessage(url string, chatID int, messageID int) error
+// 	ConsumeMedias(medias []*model.Media)
+// 	UpdateLikeButton(chatID int, messageID int, count int) error
+// 	ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Media, []string, error)
 // }
 
-func ExtractURLWithEntities(text string, entities []model.Entity) []string {
+func (s TelegramService) ExtractURLWithEntities(text string, entities []model.Entity) []string {
 	var urls []string
 
 	if len(text) == 0 {
@@ -78,11 +66,11 @@ func ExtractURLWithEntities(text string, entities []model.Entity) []string {
 	return urls
 }
 
-func ExtractUrl(message model.IncomingMessage) []string {
-	return ExtractURLWithEntities(message.Message.Text, message.Message.Entities)
+func (s TelegramService) ExtractUrl(message model.IncomingMessage) []string {
+	return s.ExtractURLWithEntities(message.Message.Text, message.Message.Entities)
 }
 
-type MessageRequestBody struct {
+type TelegramMessageRequestBody struct {
 	ChatID                int    `json:"chat_id"`
 	Text                  string `json:"text"`
 	ReplayToMessageID     int    `json:"reply_to_message_id"`
@@ -92,45 +80,45 @@ type MessageRequestBody struct {
 	ReplyMarkup           string `json:"reply_markup"`
 }
 
-type ReplyMarkup struct {
-	InlineKeyboard [][]Keyboard `json:"inline_keyboard"`
+type TelegramReplyMarkup struct {
+	InlineKeyboard [][]TelegramKeyboard `json:"inline_keyboard"`
 }
 
-type Keyboard struct {
+type TelegramKeyboard struct {
 	Text         string `json:"text"`
 	CallbackData string `json:"callback_data"`
 }
 
-type UpdateRequestBody struct {
+type TelegramUpdateRequestBody struct {
 	ChatID      int    `json:"chat_id"`
 	MessageID   int    `json:"message_id"`
 	ReplyMarkup string `json:"reply_markup"`
 }
 
-func (api apiImpl) UpdateLikeButton(chatID int, messageID int, count int) error {
-	keyboard := Keyboard{
-		fmt.Sprintf("%s (%d)", likeBtnText, count),
+func (s TelegramService) UpdateLikeButton(chatID int, messageID int, count int) error {
+	keyboard := TelegramKeyboard{
+		fmt.Sprintf("%s (%d)", telegramLikeBtnText, count),
 		"like",
 	}
 
-	replyMarkup := ReplyMarkup{[][]Keyboard{[]Keyboard{keyboard}}}
+	replyMarkup := TelegramReplyMarkup{[][]TelegramKeyboard{[]TelegramKeyboard{keyboard}}}
 	replyMarkupJSON, err := json.Marshal(replyMarkup)
 	if err != nil {
 		return err
 	}
 
-	requestBody := UpdateRequestBody{chatID, messageID, string(replyMarkupJSON)}
+	requestBody := TelegramUpdateRequestBody{chatID, messageID, string(replyMarkupJSON)}
 	requestJSON, err := json.Marshal(requestBody)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", api.endpointPrefix+endpointEditMessageReplyMarkup, bytes.NewBuffer(requestJSON))
+	req, err := http.NewRequest("POST", s.endpointPrefix+telegramEndpointEditMessageReplyMarkup, bytes.NewBuffer(requestJSON))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := api.client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -138,16 +126,16 @@ func (api apiImpl) UpdateLikeButton(chatID int, messageID int, count int) error 
 	return nil
 }
 
-func (api apiImpl) SendDuplicateMessage(url string, chatID int, messageID int) error {
-	keyboard := Keyboard{
+func (s TelegramService) SendDuplicateMessage(url string, chatID int, messageID int) error {
+	keyboard := TelegramKeyboard{
 		"强制发送",
 		"force",
 	}
 
-	replyMarkup := ReplyMarkup{[][]Keyboard{[]Keyboard{keyboard}}}
+	replyMarkup := TelegramReplyMarkup{[][]TelegramKeyboard{[]TelegramKeyboard{keyboard}}}
 	replyMarkupJSON, _ := json.Marshal(replyMarkup)
 
-	requestBody := MessageRequestBody{
+	requestBody := TelegramMessageRequestBody{
 		ChatID:                chatID,
 		Text:                  "图片地址重复: <a href=\"" + url + "\">" + url + "</a>",
 		ReplayToMessageID:     messageID,
@@ -158,16 +146,24 @@ func (api apiImpl) SendDuplicateMessage(url string, chatID int, messageID int) e
 	}
 
 	requestJSON, _ := json.Marshal(requestBody)
-	req, err := http.NewRequest("POST", api.endpointPrefix+endpointSendMessage, bytes.NewBuffer(requestJSON))
+	req, err := http.NewRequest("POST", s.endpointPrefix+telegramEndpointSendMessage, bytes.NewBuffer(requestJSON))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := api.client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	bodyString := string(bodyBytes)
+	log.Info(bodyString)
+
 	return nil
 }
 
@@ -185,13 +181,13 @@ type videoRequestBody struct {
 	ReplyMarkup string `json:"reply_markup"`
 }
 
-func (api apiImpl) ConsumeMedias(medias []*model.Media) {
-	for _, media := range medias {
+func (s TelegramService) ConsumeMedia(mediaList []*model.Media) {
+	for _, media := range mediaList {
 		var err error
 		if media.File != nil {
-			err = api.sendByStream(media)
+			err = s.sendByStream(media)
 		} else {
-			err = api.sendByUrl(media)
+			err = s.sendByUrl(media)
 		}
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -201,11 +197,11 @@ func (api apiImpl) ConsumeMedias(medias []*model.Media) {
 	}
 }
 
-func (api apiImpl) sendByUrl(media *model.Media) error {
+func (s TelegramService) sendByUrl(media *model.Media) error {
 	var endpoint string
 	var requestBody interface{}
-	keyboard := Keyboard{likeBtnText, "like"}
-	replyMarkup := ReplyMarkup{[][]Keyboard{[]Keyboard{keyboard}}}
+	keyboard := TelegramKeyboard{telegramLikeBtnText, "like"}
+	replyMarkup := TelegramReplyMarkup{[][]TelegramKeyboard{[]TelegramKeyboard{keyboard}}}
 	replyMarkupJSON, err := json.Marshal(replyMarkup)
 
 	if err != nil {
@@ -219,17 +215,17 @@ func (api apiImpl) sendByUrl(media *model.Media) error {
 
 	switch media.Type {
 	case "photo":
-		endpoint = endpointSendPhoto
+		endpoint = telegramEndpointSendPhoto
 		requestBody = photoRequestBody{
-			api.chatID,
+			s.chatID,
 			url,
 			media.Source,
 			string(replyMarkupJSON),
 		}
 	case "video":
-		endpoint = endpointSendVideo
+		endpoint = telegramEndpointSendVideo
 		requestBody = videoRequestBody{
-			api.chatID,
+			s.chatID,
 			url,
 			media.Source,
 			string(replyMarkupJSON),
@@ -243,12 +239,12 @@ func (api apiImpl) sendByUrl(media *model.Media) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", api.endpointPrefix+endpoint, bytes.NewBuffer(dataJSON))
+	req, err := http.NewRequest("POST", s.endpointPrefix+endpoint, bytes.NewBuffer(dataJSON))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := api.client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -257,18 +253,18 @@ func (api apiImpl) sendByUrl(media *model.Media) error {
 	return nil
 }
 
-func (api apiImpl) sendByStream(media *model.Media) error {
+func (s TelegramService) sendByStream(media *model.Media) error {
 	var endpoint string
 	buf := new(bytes.Buffer)
 	w := multipart.NewWriter(buf)
-	keyboard := Keyboard{likeBtnText, "like"}
-	replyMarkup := ReplyMarkup{[][]Keyboard{[]Keyboard{keyboard}}}
+	keyboard := TelegramKeyboard{telegramLikeBtnText, "like"}
+	replyMarkup := TelegramReplyMarkup{[][]TelegramKeyboard{[]TelegramKeyboard{keyboard}}}
 	replyMarkupJSON, err := json.Marshal(replyMarkup)
 	if err != nil {
 		return err
 	}
 
-	w.WriteField("chat_id", api.chatID)
+	w.WriteField("chat_id", s.chatID)
 	w.WriteField("caption", media.Source)
 	w.WriteField("reply_markup", string(replyMarkupJSON))
 	fw, err := w.CreateFormFile(media.Type, media.FileName)
@@ -280,20 +276,20 @@ func (api apiImpl) sendByStream(media *model.Media) error {
 
 	switch media.Type {
 	case "photo":
-		endpoint = endpointSendPhoto
+		endpoint = telegramEndpointSendPhoto
 	case "video":
-		endpoint = endpointSendVideo
+		endpoint = telegramEndpointSendVideo
 	default:
 		return nil
 	}
 
-	req, err := http.NewRequest("POST", api.endpointPrefix+endpoint, buf)
+	req, err := http.NewRequest("POST", s.endpointPrefix+endpoint, buf)
 	if err != nil {
 		return err
 	}
 
 	req.Header.Set("Content-Type", w.FormDataContentType())
-	resp, err := api.client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -329,15 +325,16 @@ type fileRes struct {
 	}
 }
 
-func (api apiImpl) ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Media, []string, error) {
+func (s TelegramService) ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Media, []string, error) {
 	var result []*model.Media
 	var remains []string
+	manager := GetServiceManager()
 
-	if captionURLs := ExtractURLWithEntities(msg.Message.Caption, msg.Message.CaptionEntities); captionURLs != nil {
+	if captionURLs := s.ExtractURLWithEntities(msg.Message.Caption, msg.Message.CaptionEntities); captionURLs != nil {
 		for _, url := range captionURLs {
-			_, danbooruValid := danbooru.CheckValid(url)
-			_, twitterValid := twitter.CheckValid(url)
-			_, pixivValid := pixiv.CheckValid(url)
+			_, danbooruValid := manager.All.Danbooru.CheckValid(url)
+			_, twitterValid := manager.All.Twitter.CheckValid(url)
+			_, pixivValid := manager.All.Pixiv.CheckValid(url)
 
 			if danbooruValid || twitterValid || pixivValid {
 				remains = append(remains, url)
@@ -352,11 +349,11 @@ func (api apiImpl) ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Med
 	photo := getLargestPhoto(msg)
 	fileID := photo.FileID
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s%s?file_id=%s", api.endpointPrefix, endpointGetFile, fileID), nil)
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s%s?file_id=%s", s.endpointPrefix, telegramEndpointGetFile, fileID), nil)
 	if err != nil {
 		return nil, nil, err
 	}
-	resp, err := api.client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -380,26 +377,17 @@ func (api apiImpl) ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Med
 
 	urlParts := strings.Split(filePath, "/")
 	fileName := urlParts[len(urlParts)-1]
-	fileURL := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", api.token, filePath)
+	fileURL := fmt.Sprintf("https://s.telegram.org/file/bot%s/%s", s.token, filePath)
 
 	media := model.Media{
 		FileName: fileName,
 		URL:      fileURL,
 		Type:     "photo", // support photo for now
-		Service:  "telegram",
+		Service:  string(s.Service),
 		TGFileID: fileID,
 	}
 
 	result = append(result, &media)
 
 	return result, remains, nil
-}
-
-func New() Service {
-	return apiImpl{
-		client:         &http.Client{},
-		chatID:         viper.GetString("telegram.channel_name"),
-		token:          viper.GetString("telegram.bot_token"),
-		endpointPrefix: "https://api.telegram.org/bot" + viper.GetString("telegram.bot_token"),
-	}
 }

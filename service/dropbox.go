@@ -1,4 +1,4 @@
-package dropbox
+package service
 
 import (
 	"bytes"
@@ -11,14 +11,25 @@ import (
 	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
-type apiImpl struct {
-	Client *files.Client
+type DropboxService struct {
+	client *files.Client
 }
 
-func (api apiImpl) ConsumeMedias(medias []*model.Media) {
-	db := *api.Client
+func NewDropboxService() *DropboxService {
+	config := dropbox.Config{
+		Token: viper.GetString("dropbox.access_token"),
+	}
+	db := files.New(config)
 
-	for _, media := range medias {
+	return &DropboxService{
+		client: &db,
+	}
+}
+
+func (s DropboxService) ConsumeMedia(mediaList []*model.Media) {
+	db := *s.client
+
+	for _, media := range mediaList {
 		path := fmt.Sprintf("%s/%s/%s", viper.GetString("dropbox.save_path"), media.Service, media.FileName)
 		// stream upload
 		if media.File != nil {
@@ -41,16 +52,5 @@ func (api apiImpl) ConsumeMedias(medias []*model.Media) {
 			// omit error for now, seems like a bug
 			db.SaveUrl(&arg)
 		}
-	}
-}
-
-func New() model.ConsumerService {
-	config := dropbox.Config{
-		Token: viper.GetString("dropbox.access_token"),
-	}
-	db := files.New(config)
-
-	return apiImpl{
-		Client: &db,
 	}
 }

@@ -1,4 +1,4 @@
-package pixiv
+package service
 
 import (
 	"context"
@@ -21,28 +21,70 @@ import (
 
 const ugoiraVideoEndpoint = "http://ugoira.dataprocessingclub.org/convert"
 
-type apiImpl struct {
-	Client *pixiv.Client
+type PixivService struct {
+	Service   Type
+	urlRegexp *regexp.Regexp
+	client    *pixiv.Client
 }
 
-func CheckValid(url string) ([]string, bool) {
-	re := regexp.MustCompile(`(?i)(?:www|touch)\.pixiv\.net.+(?:illust_id=|artworks\/)(\d+)`)
-	match := re.FindStringSubmatch(url)
-	log.WithFields(log.Fields{
-		"match": match,
-	}).Info("Pixiv match")
+func NewPixivService() *PixivService {
+	time := time.Now().Format(time.RFC3339)
+	hash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c", time))))
+	headers := map[string]string{
+		"User-Agent":      "PixivAndroidApp/5.0.136 (Android 6.0; Google Pixel C - 6.0.0 - API 23 - 2560x1800)",
+		"Accept-Language": "en_US",
+		"App-OS":          "android",
+		"App-OS-Version":  "4.4.2",
+		"App-Version":     "5.0.136",
+		"X-Client-Time":   time,
+		"X-Client-Hash":   hash,
+	}
+	tokenProvider := &pixiv.OauthTokenProvider{Credential: pixiv.Credential{
+		Username:     viper.GetString("pixiv.username"),
+		Password:     viper.GetString("pixiv.password"),
+		ClientID:     viper.GetString("pixiv.client_id"),
+		ClientSecret: viper.GetString("pixiv.client_secret"),
+	}, Headers: headers}
+
+	client := &pixiv.Client{TokenProvider: tokenProvider, Headers: headers}
+
+	return &PixivService{
+		Service:   Pixiv,
+		urlRegexp: regexp.MustCompile(`(?i)https?:\/\/(?:www|touch)\.pixiv\.net.+(?:illust_id=|artworks\/)(\d+)`),
+		client:    client,
+	}
+}
+
+func (s PixivService) CheckValid(urlString string) (*IncomingURL, bool) {
+	log.Debug(urlString)
+	match := s.urlRegexp.FindStringSubmatch(urlString)
+	log.Debug(match)
 	if match == nil {
 		return nil, false
 	}
 
-	return match, true
+	strID := match[1]
+	intID, _ := strconv.Atoi(strID)
+
+	return &IncomingURL{
+		Service:  Pixiv,
+		Original: urlString,
+		URL:      match[0],
+		StrID:    strID,
+		IntID:    intID,
+	}, true
 }
 
-func getIDFromTweetURL(url string) int {
-	match, ok := CheckValid(url)
-	if ok == false {
+func (s PixivService) IsService(serviceType Type) bool {
+	return serviceType == s.Service
+}
+
+func (s PixivService) GetIDFromURL(url string) int {
+	match := s.urlRegexp.FindStringSubmatch(url)
+	if match == nil {
 		return 0
 	}
+
 	if id, error := strconv.Atoi(match[1]); error == nil {
 		return id
 	}
@@ -50,43 +92,7 @@ func getIDFromTweetURL(url string) int {
 	return 0
 }
 
-func (api apiImpl) ExtractMedias(urls []string) ([]*model.Media, []string, error) {
-	var result []*model.Media
-	var remains []string
-	cli := api.Client
-
-	for _, url := range urls {
-		var urlResult []*model.Media
-
-		id := getIDFromTweetURL(url)
-		if id == 0 {
-			remains = append(remains, url)
-			continue
-		}
-		detail, err := cli.GetIllustDetail(context.TODO(), pixiv.NewGetIllustDetailParams().SetIllustID(id))
-		if err != nil {
-			return nil, nil, err
-		}
-		illust := detail.Illust
-		switch illust.Type {
-		case "illust", "manga":
-			urlResult = append(urlResult, extractPhoto(illust)...)
-		case "ugoira":
-			urlResult = append(urlResult, extractUgoira(url))
-		}
-
-		for _, media := range urlResult {
-			media.Source = url
-			media.Service = "pixiv"
-		}
-
-		result = append(result, urlResult...)
-	}
-
-	return result, remains, nil
-}
-
-func extractPhoto(illust pixiv.GetIllustDetailIllust) []*model.Media {
+func (s PixivService) extractPhoto(illust pixiv.GetIllustDetailIllust) []*model.Media {
 	var result []*model.Media
 	var urls []string
 	httpClient := &http.Client{}
@@ -139,7 +145,7 @@ func extractPhoto(illust pixiv.GetIllustDetailIllust) []*model.Media {
 	return result
 }
 
-func extractUgoira(pageURL string) *model.Media {
+func (s PixivService) extractUgoira(pageURL string) *model.Media {
 	httpClient := &http.Client{}
 	type reqBody struct {
 		URL string `json:"url"`
@@ -182,29 +188,28 @@ func extractUgoira(pageURL string) *model.Media {
 	return &media
 }
 
-func New() model.ImageService {
-
-	time := time.Now().Format(time.RFC3339)
-	hash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c", time))))
-	headers := map[string]string{
-		"User-Agent":      "PixivAndroidApp/5.0.136 (Android 6.0; Google Pixel C - 6.0.0 - API 23 - 2560x1800)",
-		"Accept-Language": "en_US",
-		"App-OS":          "android",
-		"App-OS-Version":  "4.4.2",
-		"App-Version":     "5.0.136",
-		"X-Client-Time":   time,
-		"X-Client-Hash":   hash,
+func (s PixivService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*model.Media, err error) {
+	client := s.client
+	id := incomingURL.IntID
+	if id == 0 {
+		return
 	}
-	tokenProvider := &pixiv.OauthTokenProvider{Credential: pixiv.Credential{
-		Username:     viper.GetString("pixiv.username"),
-		Password:     viper.GetString("pixiv.password"),
-		ClientID:     viper.GetString("pixiv.client_id"),
-		ClientSecret: viper.GetString("pixiv.client_secret"),
-	}, Headers: headers}
-
-	cli := &pixiv.Client{TokenProvider: tokenProvider, Headers: headers}
-
-	return apiImpl{
-		Client: cli,
+	detail, err := client.GetIllustDetail(context.TODO(), pixiv.NewGetIllustDetailParams().SetIllustID(id))
+	if err != nil {
+		return nil, err
 	}
+	illust := detail.Illust
+	switch illust.Type {
+	case "illust", "manga":
+		result = append(result, s.extractPhoto(illust)...)
+	case "ugoira":
+		result = append(result, s.extractUgoira(incomingURL.URL))
+	}
+
+	for _, media := range result {
+		(*media).Source = incomingURL.URL
+		(*media).Service = string(s.Service)
+	}
+
+	return result, nil
 }

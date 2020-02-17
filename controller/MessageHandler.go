@@ -5,30 +5,26 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"regexp"
 
 	"github.com/etcd-io/bbolt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wxt2005/image-capture-bot-go/db"
 	"github.com/wxt2005/image-capture-bot-go/model"
-	"github.com/wxt2005/image-capture-bot-go/service/danbooru"
-	"github.com/wxt2005/image-capture-bot-go/service/dropbox"
-	"github.com/wxt2005/image-capture-bot-go/service/pixiv"
-	"github.com/wxt2005/image-capture-bot-go/service/telegram"
-	"github.com/wxt2005/image-capture-bot-go/service/tumblr"
-	"github.com/wxt2005/image-capture-bot-go/service/twitter"
+	"github.com/wxt2005/image-capture-bot-go/service"
 )
 
 func MessageHandler(w http.ResponseWriter, r *http.Request) {
-	telegramService := telegram.New()
+	serviceManager := service.GetServiceManager()
+	telegramService := serviceManager.All.Telegram
+
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(500)
 	}
 	var m model.IncomingMessage
 	var cm model.CallbackMessage
-	skipCheckDuplicate := false
+	skipCheckDuplicate := true
 
 	// handle callback
 	if err := json.Unmarshal(body, &cm); err == nil {
@@ -53,104 +49,62 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 	}
 
-	var finalMedias []*model.Media
-	urls := telegram.ExtractUrl(m)
-	var duplicates []string
+	var mediaList []*model.Media
+	var duplicates []*service.IncomingURL
+	urlStringList := telegramService.ExtractUrl(m)
 
 	if m.Message.Photo != nil {
-		medias, remains, _ := telegramService.ExtractMediaFromMsg(&m)
-		if len(medias) > 0 {
-			finalMedias = append(finalMedias, medias...)
+		media, remains, _ := telegramService.ExtractMediaFromMsg(&m)
+		if len(media) > 0 {
+			mediaList = append(mediaList, media...)
 		}
 
 		if len(remains) > 0 {
-			urls = append(urls, remains...)
+			urlStringList = remains
 		}
 	}
 
-	urls = clearUrls(&urls)
+	incomingURLList := serviceManager.BuildIncomingURL(&urlStringList)
 
 	if skipCheckDuplicate != true {
-		urls, duplicates = extractDuplicate(&urls)
+		incomingURLList, duplicates = extractDuplicate(incomingURLList)
 	}
 
 	if len(duplicates) > 0 {
-		log.WithField("urls", duplicates).Debug("Duplicate url")
-		go sendDuplicateMessages(&duplicates, m.Message.Chat.ID, m.Message.MessageID)
+		go sendDuplicateMessages(duplicates, m.Message.Chat.ID, m.Message.MessageID)
 	}
 
-	imageServices := []model.ImageService{
-		danbooru.New(),
-		pixiv.New(),
-		twitter.New(),
-		tumblr.New(),
-	}
-	consumerServices := []model.ConsumerService{
-		dropbox.New(),
-		model.ConsumerService(telegramService),
-	}
+	mediaList = append(mediaList, serviceManager.ExtraMediaFromURL(incomingURLList)...)
 
-	for _, imageService := range imageServices {
-		medias, remains, err := imageService.ExtractMedias(urls)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error": err,
-			}).Error("Extract media failed")
-			continue
-		}
-		if medias != nil {
-			finalMedias = append(finalMedias, medias...)
-		}
-		if remains != nil {
-			urls = remains
-		}
-	}
-
-	if len(finalMedias) <= 0 {
-		return
-	}
-	for _, consumerService := range consumerServices {
-		go consumerService.ConsumeMedias(finalMedias)
+	if len(mediaList) > 0 {
+		serviceManager.ConsumeMedia(mediaList)
 	}
 
 	header := w.Header()
 	header["Content-Type"] = []string{"application/json; charset=utf-8"}
-	jsonString, _ := json.Marshal(finalMedias)
-	fmt.Fprintf(w, string(jsonString))
-}
-
-func clearUrls(urls *[]string) (results []string) {
-	for _, url := range *urls {
-		// remove twitter s=xxx
-		twitterReg := regexp.MustCompile(`(?i)(https?:\/\/(?:www\.)?twitter\.com\/.+?\/status\/\d+)`)
-		twitterMatch := twitterReg.FindStringSubmatch(url)
-		if twitterMatch != nil {
-			results = append(results, twitterMatch[1])
-			log.WithFields(log.Fields{
-				"before": url,
-				"after":  twitterMatch[1],
-			}).Info("url cleared")
-			break
-		}
-
-		results = append(results, url)
+	var jsonString string
+	if len(mediaList) > 0 {
+		str, _ := json.Marshal(mediaList)
+		jsonString = string(str)
+	} else {
+		jsonString = "[]"
 	}
-
-	return
+	fmt.Fprintf(w, jsonString)
 }
 
-func extractDuplicate(urls *[]string) (remains []string, duplicates []string) {
+func extractDuplicate(incomingURLList []*service.IncomingURL) (remains []*service.IncomingURL, duplicates []*service.IncomingURL) {
 	db.DB.Batch(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(viper.GetString("db.url_bucket")))
 
-		for _, url := range *urls {
-			exist := b.Get([]byte(url))
+		for _, incomingURL := range incomingURLList {
+			urlString := incomingURL.URL
+			exist := b.Get([]byte(urlString))
 
 			if exist == nil {
-				remains = append(remains, url)
-				b.Put([]byte(url), []byte("1"))
+				remains = append(remains, incomingURL)
+				b.Put([]byte(urlString), []byte("1"))
 			} else {
-				duplicates = append(duplicates, url)
+				duplicates = append(duplicates, incomingURL)
 			}
 		}
 
@@ -160,10 +114,12 @@ func extractDuplicate(urls *[]string) (remains []string, duplicates []string) {
 	return
 }
 
-func sendDuplicateMessages(urls *[]string, chatID int, messageID int) {
-	service := telegram.New()
-	for _, url := range *urls {
-		if err := service.SendDuplicateMessage(url, chatID, messageID); err != nil {
+func sendDuplicateMessages(incomingURLList []*service.IncomingURL, chatID int, messageID int) {
+	telegramService := service.GetServiceManager().All.Telegram
+
+	for _, incomingURL := range incomingURLList {
+		log.WithField("URL", incomingURL.URL).Debug("Duplicate url")
+		if err := telegramService.SendDuplicateMessage(incomingURL.URL, chatID, messageID); err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Error("Send duplicate message failed")
