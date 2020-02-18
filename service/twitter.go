@@ -9,7 +9,6 @@ import (
 
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
 const mp4ContentType = "video/mp4"
@@ -56,8 +55,8 @@ func (s TwitterService) IsService(serviceType Type) bool {
 	return serviceType == s.Service
 }
 
-func (s TwitterService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*model.Media, error) {
-	var result []*model.Media
+func (s TwitterService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media, error) {
+	var result []*Media
 	client := s.client
 	id := incomingURL.IntID
 
@@ -76,7 +75,7 @@ func (s TwitterService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*model.
 	}
 
 	for _, mediaEntity := range mediaEntities {
-		var resultMedia *model.Media
+		var resultMedia *Media
 
 		switch mediaEntity.Type {
 		case "photo":
@@ -97,19 +96,19 @@ func (s TwitterService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*model.
 	return result, nil
 }
 
-func (s TwitterService) extractPhoto(media *anaconda.EntityMedia) *model.Media {
+func (s TwitterService) extractPhoto(media *anaconda.EntityMedia) *Media {
 	urlParts := strings.Split(media.Media_url_https, "/")
 	// wxt2005_1.jpg
 	fileName := urlParts[len(urlParts)-1]
 
-	return &model.Media{
+	return &Media{
 		FileName: fileName,
 		URL:      media.Media_url_https,
 		Type:     "photo",
 	}
 }
 
-func (s TwitterService) extractAnimatedGIF(media *anaconda.EntityMedia) *model.Media {
+func (s TwitterService) extractAnimatedGIF(media *anaconda.EntityMedia) *Media {
 	variants := media.VideoInfo.Variants
 	var variant *anaconda.Variant
 	for _, item := range variants {
@@ -127,7 +126,7 @@ func (s TwitterService) extractAnimatedGIF(media *anaconda.EntityMedia) *model.M
 	// wxt2005_1.mp4
 	fileName := urlParts[len(urlParts)-1]
 
-	return &model.Media{
+	return &Media{
 		FileName: fileName,
 		URL:      url,
 		Type:     "video",

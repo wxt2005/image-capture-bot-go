@@ -49,9 +49,9 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 	}
 
-	var mediaList []*model.Media
+	var mediaList []*service.Media
 	var duplicates []*service.IncomingURL
-	urlStringList := telegramService.ExtractUrl(m)
+	urlStringList := telegramService.ExtractURL(m)
 
 	if m.Message.Photo != nil {
 		media, remains, _ := telegramService.ExtractMediaFromMsg(&m)

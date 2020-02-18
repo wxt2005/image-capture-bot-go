@@ -41,13 +41,6 @@ func NewTelegramService() *TelegramService {
 	}
 }
 
-// type Service interface {
-// 	SendDuplicateMessage(url string, chatID int, messageID int) error
-// 	ConsumeMedias(medias []*model.Media)
-// 	UpdateLikeButton(chatID int, messageID int, count int) error
-// 	ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Media, []string, error)
-// }
-
 func (s TelegramService) ExtractURLWithEntities(text string, entities []model.Entity) []string {
 	var urls []string
 
@@ -66,7 +59,7 @@ func (s TelegramService) ExtractURLWithEntities(text string, entities []model.En
 	return urls
 }
 
-func (s TelegramService) ExtractUrl(message model.IncomingMessage) []string {
+func (s TelegramService) ExtractURL(message model.IncomingMessage) []string {
 	return s.ExtractURLWithEntities(message.Message.Text, message.Message.Entities)
 }
 
@@ -181,13 +174,13 @@ type videoRequestBody struct {
 	ReplyMarkup string `json:"reply_markup"`
 }
 
-func (s TelegramService) ConsumeMedia(mediaList []*model.Media) {
+func (s TelegramService) ConsumeMedia(mediaList []*Media) {
 	for _, media := range mediaList {
 		var err error
 		if media.File != nil {
 			err = s.sendByStream(media)
 		} else {
-			err = s.sendByUrl(media)
+			err = s.sendByURL(media)
 		}
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -197,7 +190,7 @@ func (s TelegramService) ConsumeMedia(mediaList []*model.Media) {
 	}
 }
 
-func (s TelegramService) sendByUrl(media *model.Media) error {
+func (s TelegramService) sendByURL(media *Media) error {
 	var endpoint string
 	var requestBody interface{}
 	keyboard := TelegramKeyboard{telegramLikeBtnText, "like"}
@@ -253,7 +246,7 @@ func (s TelegramService) sendByUrl(media *model.Media) error {
 	return nil
 }
 
-func (s TelegramService) sendByStream(media *model.Media) error {
+func (s TelegramService) sendByStream(media *Media) error {
 	var endpoint string
 	buf := new(bytes.Buffer)
 	w := multipart.NewWriter(buf)
@@ -325,8 +318,8 @@ type fileRes struct {
 	}
 }
 
-func (s TelegramService) ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*model.Media, []string, error) {
-	var result []*model.Media
+func (s TelegramService) ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*Media, []string, error) {
+	var result []*Media
 	var remains []string
 	manager := GetServiceManager()
 
@@ -379,7 +372,7 @@ func (s TelegramService) ExtractMediaFromMsg(msg *model.IncomingMessage) ([]*mod
 	fileName := urlParts[len(urlParts)-1]
 	fileURL := fmt.Sprintf("https://s.telegram.org/file/bot%s/%s", s.token, filePath)
 
-	media := model.Media{
+	media := Media{
 		FileName: fileName,
 		URL:      fileURL,
 		Type:     "photo", // support photo for now

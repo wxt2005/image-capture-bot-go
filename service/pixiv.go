@@ -16,7 +16,6 @@ import (
 	"github.com/search2d/go-pixiv"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
 const ugoiraVideoEndpoint = "http://ugoira.dataprocessingclub.org/convert"
@@ -92,8 +91,8 @@ func (s PixivService) GetIDFromURL(url string) int {
 	return 0
 }
 
-func (s PixivService) extractPhoto(illust pixiv.GetIllustDetailIllust) []*model.Media {
-	var result []*model.Media
+func (s PixivService) extractPhoto(illust pixiv.GetIllustDetailIllust) []*Media {
+	var result []*Media
 	var urls []string
 	httpClient := &http.Client{}
 
@@ -131,9 +130,10 @@ func (s PixivService) extractPhoto(illust pixiv.GetIllustDetailIllust) []*model.
 			}).Error("Get pixiv image failed")
 			continue
 		}
+
 		defer resp.Body.Close()
 
-		media := model.Media{
+		media := Media{
 			FileName: fileName,
 			URL:      imageURL,
 			File:     &file,
@@ -145,7 +145,7 @@ func (s PixivService) extractPhoto(illust pixiv.GetIllustDetailIllust) []*model.
 	return result
 }
 
-func (s PixivService) extractUgoira(pageURL string) *model.Media {
+func (s PixivService) extractUgoira(pageURL string) *Media {
 	httpClient := &http.Client{}
 	type reqBody struct {
 		URL string `json:"url"`
@@ -174,13 +174,16 @@ func (s PixivService) extractUgoira(pageURL string) *model.Media {
 			"error": err,
 		}).Error("Get pixiv ugoira failed")
 	}
-	var m model.UgoiraConverResponse
+	m := struct {
+		URL    string `json:"url"`
+		Format string `json:"format"`
+	}{}
 	json.Unmarshal(body, &m)
 	videoURL := m.URL
 	urlParts := strings.Split(videoURL, "/")
 	fileName := urlParts[len(urlParts)-1]
 
-	media := model.Media{
+	media := Media{
 		FileName: fileName,
 		URL:      videoURL,
 		Type:     "video",
@@ -188,7 +191,7 @@ func (s PixivService) extractUgoira(pageURL string) *model.Media {
 	return &media
 }
 
-func (s PixivService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*model.Media, err error) {
+func (s PixivService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*Media, err error) {
 	client := s.client
 	id := incomingURL.IntID
 	if id == 0 {

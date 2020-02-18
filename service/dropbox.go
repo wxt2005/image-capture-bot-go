@@ -8,7 +8,6 @@ import (
 	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox/files"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
 type DropboxService struct {
@@ -26,7 +25,7 @@ func NewDropboxService() *DropboxService {
 	}
 }
 
-func (s DropboxService) ConsumeMedia(mediaList []*model.Media) {
+func (s DropboxService) ConsumeMedia(mediaList []*Media) {
 	db := *s.client
 
 	for _, media := range mediaList {

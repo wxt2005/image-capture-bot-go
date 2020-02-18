@@ -7,7 +7,6 @@ import (
 	"regexp"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
 type TumblrService struct {
@@ -41,7 +40,7 @@ func (s TumblrService) IsService(serviceType Type) bool {
 	return serviceType == s.Service
 }
 
-func (s TumblrService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*model.Media, err error) {
+func (s TumblrService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*Media, err error) {
 	log.Debug(incomingURL.URL)
 	req, err := http.NewRequest("GET", incomingURL.URL, nil)
 	if err != nil {
@@ -49,13 +48,15 @@ func (s TumblrService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*
 	}
 
 	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("Get tumblr page failed")
+		return nil, err
 	}
 	re := regexp.MustCompile(`(?i)src="(https?:\/\/\d+\.media\.tumblr\.com\/\w+\/)(tumblr_\w+_)(\d+)\.(jpe?g|gif|png|)`)
 	match := re.FindSubmatch(body)
@@ -72,7 +73,7 @@ func (s TumblrService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*
 	} else {
 		imageType = "photo"
 	}
-	media := model.Media{
+	media := Media{
 		FileName: fileName,
 		URL:      imageURL,
 		Type:     imageType,

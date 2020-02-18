@@ -2,8 +2,6 @@ package service
 
 import (
 	"sync"
-
-	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
 type Type string
@@ -17,6 +15,16 @@ const (
 	Telegram      = "Telegram"
 )
 
+type Media struct {
+	FileName string
+	URL      string
+	File     *[]byte `json:"-"`
+	Type     string  // photo, video
+	Source   string
+	Service  string
+	TGFileID string
+}
+
 type IncomingURL struct {
 	Service  Type
 	Original string
@@ -28,11 +36,11 @@ type IncomingURL struct {
 type ProviderService interface {
 	IsService(Type Type) bool
 	CheckValid(urlString string) (*IncomingURL, bool)
-	ExtractMediaFromURL(incomingURL *IncomingURL) ([]*model.Media, error)
+	ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media, error)
 }
 
 type ConsumerService interface {
-	ConsumeMedia(mediaList []*model.Media)
+	ConsumeMedia(mediaList []*Media)
 }
 
 type AllServices struct {
@@ -88,7 +96,7 @@ func (s ServiceManager) BuildIncomingURL(urlList *[]string) (result []*IncomingU
 	return
 }
 
-func (s ServiceManager) ExtraMediaFromURL(incomingURLList []*IncomingURL) (result []*model.Media) {
+func (s ServiceManager) ExtraMediaFromURL(incomingURLList []*IncomingURL) (result []*Media) {
 	for _, incomingURL := range incomingURLList {
 		for _, provider := range s.Providers {
 			if !provider.IsService(incomingURL.Service) {
@@ -104,7 +112,7 @@ func (s ServiceManager) ExtraMediaFromURL(incomingURLList []*IncomingURL) (resul
 	return
 }
 
-func (s ServiceManager) ConsumeMedia(media []*model.Media) {
+func (s ServiceManager) ConsumeMedia(media []*Media) {
 	for _, consumer := range s.Consumers {
 		go consumer.ConsumeMedia(media)
 	}

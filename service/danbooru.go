@@ -11,7 +11,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/wxt2005/image-capture-bot-go/model"
 )
 
 type DanbooruService struct {
@@ -51,13 +50,7 @@ func (s DanbooruService) IsService(serviceType Type) bool {
 	return serviceType == s.Service
 }
 
-func (s DanbooruService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*model.Media, err error) {
-	type respBody struct {
-		ID      int
-		Source  string
-		FileURL string `json:"file_url"`
-		PixivID int    `json:"pixiv_id"`
-	}
+func (s DanbooruService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*Media, err error) {
 	manager := GetServiceManager()
 
 	id := incomingURL.IntID
@@ -74,20 +67,22 @@ func (s DanbooruService) ExtractMediaFromURL(incomingURL *IncomingURL) (result [
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("Get danbooru info failed")
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("Get danbooru info failed")
+		return nil, err
 	}
-	var m respBody
+
+	m := struct {
+		ID      int
+		Source  string
+		FileURL string `json:"file_url"`
+		PixivID int    `json:"pixiv_id"`
+	}{}
 	if err := json.Unmarshal(body, &m); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -116,7 +111,7 @@ func (s DanbooruService) ExtractMediaFromURL(incomingURL *IncomingURL) (result [
 
 	urlParts := strings.Split(m.FileURL, "/")
 	fileName := urlParts[len(urlParts)-1]
-	media := model.Media{
+	media := Media{
 		FileName: fileName,
 		URL:      m.FileURL,
 		Type:     "photo",
