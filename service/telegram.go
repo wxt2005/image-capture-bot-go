@@ -120,6 +120,7 @@ func (s TelegramService) sendByURL(media *Media) error {
 	switch media.Type {
 	case "photo":
 		config = tgbotapi.PhotoConfig{
+			Caption: media.URL,
 			BaseFile: tgbotapi.BaseFile{
 				BaseChat: tgbotapi.BaseChat{
 					ChannelUsername: s.channelName,
@@ -131,6 +132,7 @@ func (s TelegramService) sendByURL(media *Media) error {
 		}
 	case "video":
 		config = tgbotapi.VideoConfig{
+			Caption: media.URL,
 			BaseFile: tgbotapi.BaseFile{
 				BaseChat: tgbotapi.BaseChat{
 					ChannelUsername: s.channelName,
@@ -157,6 +159,7 @@ func (s TelegramService) sendByStream(media *Media) error {
 	switch media.Type {
 	case "photo":
 		config = tgbotapi.PhotoConfig{
+			Caption: media.URL,
 			BaseFile: tgbotapi.BaseFile{
 				BaseChat: tgbotapi.BaseChat{
 					ChannelUsername: s.channelName,
@@ -171,6 +174,7 @@ func (s TelegramService) sendByStream(media *Media) error {
 		}
 	case "video":
 		config = tgbotapi.VideoConfig{
+			Caption: media.URL,
 			BaseFile: tgbotapi.BaseFile{
 				BaseChat: tgbotapi.BaseChat{
 					ChannelUsername: s.channelName,
