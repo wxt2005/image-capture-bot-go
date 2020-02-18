@@ -7,10 +7,10 @@ import (
 	"net/http"
 
 	"github.com/etcd-io/bbolt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wxt2005/image-capture-bot-go/db"
-	"github.com/wxt2005/image-capture-bot-go/model"
 	"github.com/wxt2005/image-capture-bot-go/service"
 )
 
@@ -21,40 +21,45 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(500)
+		return
 	}
-	var m model.IncomingMessage
-	var cm model.CallbackMessage
+
+	var update tgbotapi.Update
+
 	skipCheckDuplicate := true
 
+	err = json.Unmarshal(body, &update)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
 	// handle callback
-	if err := json.Unmarshal(body, &cm); err == nil {
-		switch cm.CallbackQuery.Data {
+	if update.CallbackQuery != nil {
+		switch update.CallbackQuery.Data {
 		case "like":
-			chatID := cm.CallbackQuery.Message.Chat.ID
-			messageID := cm.CallbackQuery.Message.MessageID
-			userID := cm.CallbackQuery.From.ID
+			chatID := update.CallbackQuery.Message.Chat.ID
+			messageID := update.CallbackQuery.Message.MessageID
+			userID := update.CallbackQuery.From.ID
 			count, ok := saveLike(chatID, messageID, userID)
 			if ok {
-				go telegramService.UpdateLikeButton(chatID, cm.CallbackQuery.Message.MessageID, count)
+				go telegramService.UpdateLikeButton(chatID, update.Message.MessageID, count)
 			}
+			w.WriteHeader(200)
 			return
 		case "force":
 			// extract Message, go through
-			m = model.IncomingMessage{Message: cm.CallbackQuery.Message}
+			update.Message = update.CallbackQuery.Message
 			skipCheckDuplicate = true
 		}
 	}
 
-	if err := json.Unmarshal(body, &m); err != nil {
-		w.WriteHeader(500)
-	}
-
 	var mediaList []*service.Media
 	var duplicates []*service.IncomingURL
-	urlStringList := telegramService.ExtractURL(m)
+	urlStringList := telegramService.ExtractURL(update.Message)
 
-	if m.Message.Photo != nil {
-		media, remains, _ := telegramService.ExtractMediaFromMsg(&m)
+	if update.Message.Photo != nil {
+		media, remains, _ := telegramService.ExtractMediaFromMsg(update.Message)
 		if len(media) > 0 {
 			mediaList = append(mediaList, media...)
 		}
@@ -71,7 +76,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(duplicates) > 0 {
-		go sendDuplicateMessages(duplicates, m.Message.Chat.ID, m.Message.MessageID)
+		go sendDuplicateMessages(duplicates, update.Message.Chat.ID, update.Message.MessageID)
 	}
 
 	mediaList = append(mediaList, serviceManager.ExtraMediaFromURL(incomingURLList)...)
@@ -114,7 +119,7 @@ func extractDuplicate(incomingURLList []*service.IncomingURL) (remains []*servic
 	return
 }
 
-func sendDuplicateMessages(incomingURLList []*service.IncomingURL, chatID int, messageID int) {
+func sendDuplicateMessages(incomingURLList []*service.IncomingURL, chatID int64, messageID int) {
 	telegramService := service.GetServiceManager().All.Telegram
 
 	for _, incomingURL := range incomingURLList {
@@ -127,7 +132,7 @@ func sendDuplicateMessages(incomingURLList []*service.IncomingURL, chatID int, m
 	}
 }
 
-func saveLike(chatID int, messageID int, userID int) (count int, ok bool) {
+func saveLike(chatID int64, messageID int, userID int) (count int, ok bool) {
 	db.DB.Batch(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(viper.GetString("db.like_bucket")))
 		key := fmt.Sprintf("chat_%d_msg_%d", chatID, messageID)
