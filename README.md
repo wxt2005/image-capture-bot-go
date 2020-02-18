@@ -1,8 +1,8 @@
 # Image capture bot
 
-a telegram bot to capture images from Twitter, Pixiv and other social media;
+A telegram bot to capture images from Twitter, Pixiv and other image sites.
 
-## Devopment
+## Development
 
 ```bash
 # fill config file
@@ -28,5 +28,5 @@ docker build -t image-capture-bot-go:0.0.1 .
 ## Run Docker Container
 
 ```bash
-docker run -it -p 3000:8080 -v /path/to/external:/go/image-capture-bot-go/external image-capture-bot-go:0.0.1
+docker run -it -p 3000:8080 -v /path/to/external:/go/image-capture-bot-go/external image-capture-bot-go:latest
 ```
