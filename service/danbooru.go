@@ -88,11 +88,9 @@ func (s DanbooruService) ExtractMediaFromURL(incomingURL *IncomingURL) (result [
 			"error": err,
 		}).Error("Get danbooru info failed")
 	}
-	// log.Debug(string(body))
 	// use source image
 	if len(m.Source) != 0 {
 		// Replace original pixiv image url with page url for indentity
-		log.Debug(m.PixivID)
 		if m.PixivID != 0 {
 			m.Source = fmt.Sprintf("https://www.pixiv.net/artworks/%d", m.PixivID)
 			log.WithField("New Source", m.Source).Debug("Pixiv image url to page url")

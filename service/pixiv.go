@@ -55,9 +55,7 @@ func NewPixivService() *PixivService {
 }
 
 func (s PixivService) CheckValid(urlString string) (*IncomingURL, bool) {
-	log.Debug(urlString)
 	match := s.urlRegexp.FindStringSubmatch(urlString)
-	log.Debug(match)
 	if match == nil {
 		return nil, false
 	}
@@ -146,7 +144,6 @@ func (s PixivService) extractPhoto(illust pixiv.GetIllustDetailIllust) []*Media 
 }
 
 func (s PixivService) extractUgoira(pageURL string) *Media {
-	log.Debug(pageURL)
 	httpClient := &http.Client{}
 	type reqBody struct {
 		URL string `json:"url"`
@@ -178,7 +175,6 @@ func (s PixivService) extractUgoira(pageURL string) *Media {
 		}).Error("Get pixiv ugoira failed")
 		return nil
 	}
-	log.Debug(string(body))
 	m := struct {
 		URL    string `json:"url"`
 		Format string `json:"format"`

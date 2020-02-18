@@ -48,6 +48,8 @@ func main() {
 	}
 
 	http.HandleFunc("/api/"+viper.GetString("telegram.bot_token")+"/message", controller.MessageHandler)
+	http.HandleFunc("/api/send", controller.APIHandler)
+
 	log.WithFields(log.Fields{
 		"port": port,
 	}).Info("Server listening...")

@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type TumblrService struct {
@@ -41,7 +39,6 @@ func (s TumblrService) IsService(serviceType Type) bool {
 }
 
 func (s TumblrService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*Media, err error) {
-	log.Debug(incomingURL.URL)
 	req, err := http.NewRequest("GET", incomingURL.URL, nil)
 	if err != nil {
 		return nil, err
