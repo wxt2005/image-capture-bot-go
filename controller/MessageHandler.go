@@ -41,7 +41,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 			userID := update.CallbackQuery.From.ID
 			count, ok := saveLike(chatID, messageID, userID)
 			if ok {
-				go telegramService.UpdateLikeButton(chatID, update.Message.MessageID, count)
+				go telegramService.UpdateLikeButton(chatID, messageID, count)
 			}
 			w.WriteHeader(200)
 			return

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -71,6 +72,14 @@ func (s TelegramService) UpdateLikeButton(chatID int64, messageID int, count int
 	config := tgbotapi.NewEditMessageReplyMarkup(chatID, messageID, keyboardMarkup)
 	_, err := s.bot.Send(config)
 
+	if err != nil {
+		jsonByte, _ := json.Marshal(config)
+		log.WithFields(log.Fields{
+			"config": string(jsonByte),
+			"error":  err,
+		}).Error("Update like button failed")
+	}
+
 	return err
 }
 
@@ -86,6 +95,14 @@ func (s TelegramService) SendDuplicateMessage(url string, chatID int64, messageI
 	config.ReplyMarkup = keyboardMarkup
 
 	_, err := s.bot.Send(config)
+
+	if err != nil {
+		jsonByte, _ := json.Marshal(config)
+		log.WithFields(log.Fields{
+			"config": string(jsonByte),
+			"error":  err,
+		}).Error("Send duplicate message failed")
+	}
 
 	return err
 }
@@ -147,6 +164,14 @@ func (s TelegramService) sendByURL(media *Media) error {
 	}
 
 	_, err := s.bot.Send(config)
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"config": config,
+			"error":  err,
+		}).Error("Send image by url failed")
+	}
+
 	return err
 }
 
@@ -192,6 +217,14 @@ func (s TelegramService) sendByStream(media *Media) error {
 	}
 
 	_, err := s.bot.Send(config)
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"config": config,
+			"error":  err,
+		}).Error("Send image by stream failed")
+	}
+
 	return err
 }
 
