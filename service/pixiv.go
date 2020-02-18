@@ -146,6 +146,7 @@ func (s PixivService) extractPhoto(illust pixiv.GetIllustDetailIllust) []*Media 
 }
 
 func (s PixivService) extractUgoira(pageURL string) *Media {
+	log.Debug(pageURL)
 	httpClient := &http.Client{}
 	type reqBody struct {
 		URL string `json:"url"`
@@ -159,6 +160,7 @@ func (s PixivService) extractUgoira(pageURL string) *Media {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Get pixiv ugoira failed")
+		return nil
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := httpClient.Do(req)
@@ -166,6 +168,7 @@ func (s PixivService) extractUgoira(pageURL string) *Media {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Get pixiv ugoira failed")
+		return nil
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -173,12 +176,23 @@ func (s PixivService) extractUgoira(pageURL string) *Media {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Get pixiv ugoira failed")
+		return nil
 	}
+	log.Debug(string(body))
 	m := struct {
 		URL    string `json:"url"`
 		Format string `json:"format"`
+		Error  string `json:"error"`
 	}{}
 	json.Unmarshal(body, &m)
+
+	if m.Error != "" {
+		log.WithFields(log.Fields{
+			"error": m.Error,
+		}).Error("Get pixiv ugoira failed")
+
+		return nil
+	}
 	videoURL := m.URL
 	urlParts := strings.Split(videoURL, "/")
 	fileName := urlParts[len(urlParts)-1]
@@ -206,7 +220,9 @@ func (s PixivService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*M
 	case "illust", "manga":
 		result = append(result, s.extractPhoto(illust)...)
 	case "ugoira":
-		result = append(result, s.extractUgoira(incomingURL.URL))
+		if ugoira := s.extractUgoira(incomingURL.URL); ugoira != nil {
+			result = append(result, ugoira)
+		}
 	}
 
 	for _, media := range result {
