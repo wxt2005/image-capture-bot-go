@@ -13,7 +13,7 @@ func APIHandler(w http.ResponseWriter, r *http.Request) {
 	serviceManager := service.GetServiceManager()
 	header := w.Header()
 	header["Content-Type"] = []string{"application/json; charset=utf-8"}
-	var jsonString string
+	var output Response
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -44,17 +44,8 @@ func APIHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(duplicates) > 0 {
-		jsonByte, err := json.Marshal(struct {
-			Error string `json:"error"`
-		}{
-			Error: "duplicate",
-		})
-
-		if err != nil {
-			w.WriteHeader(500)
-			return
-		}
-
+		output.Message = MsgDuplicate
+		jsonByte, _ := json.Marshal(output)
 		fmt.Fprintf(w, string(jsonByte))
 		return
 	}
@@ -65,11 +56,8 @@ func APIHandler(w http.ResponseWriter, r *http.Request) {
 		serviceManager.ConsumeMedia(mediaList)
 	}
 
-	if len(mediaList) > 0 {
-		jsonByte, _ := json.Marshal(mediaList)
-		jsonString = string(jsonByte)
-	} else {
-		jsonString = "[]"
-	}
-	fmt.Fprintf(w, jsonString)
+	output.Media = &mediaList
+	output.Message = MsgSuccess
+	jsonByte, _ := json.Marshal(mediaList)
+	fmt.Fprintf(w, string(jsonByte))
 }

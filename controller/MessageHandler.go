@@ -17,12 +17,16 @@ import (
 func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	serviceManager := service.GetServiceManager()
 	telegramService := serviceManager.All.Telegram
+	header := w.Header()
+	header["Content-Type"] = []string{"application/json; charset=utf-8"}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(500)
 		return
 	}
+
+	var output Response
 
 	var update tgbotapi.Update
 	skipCheckDuplicate := false
@@ -83,16 +87,10 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		serviceManager.ConsumeMedia(mediaList)
 	}
 
-	header := w.Header()
-	header["Content-Type"] = []string{"application/json; charset=utf-8"}
-	var jsonString string
-	if len(mediaList) > 0 {
-		str, _ := json.Marshal(mediaList)
-		jsonString = string(str)
-	} else {
-		jsonString = "[]"
-	}
-	fmt.Fprintf(w, jsonString)
+	output.Media = &mediaList
+	output.Message = MsgSuccess
+	jsonByte, _ := json.Marshal(output)
+	fmt.Fprintf(w, string(jsonByte))
 }
 
 func extractDuplicate(incomingURLList []*service.IncomingURL) (remains []*service.IncomingURL, duplicates []*service.IncomingURL) {
