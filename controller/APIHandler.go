@@ -58,6 +58,6 @@ func APIHandler(w http.ResponseWriter, r *http.Request) {
 
 	output.Media = &mediaList
 	output.Message = MsgSuccess
-	jsonByte, _ := json.Marshal(mediaList)
+	jsonByte, _ := json.Marshal(output)
 	fmt.Fprintf(w, string(jsonByte))
 }
