@@ -95,7 +95,7 @@ func (s PixivService) extractPhoto(illust pixiv.GetIllustDetailIllust) []*Media 
 	httpClient := &http.Client{}
 
 	if illust.PageCount == 1 {
-		urls = append(urls, illust.ImageURLs["large"])
+		urls = append(urls, illust.MetaSinglePage["original_image_url"])
 	} else {
 		for _, item := range illust.MetaPages {
 			urls = append(urls, item.ImageURLs["original"])
