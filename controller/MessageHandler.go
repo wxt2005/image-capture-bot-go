@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/etcd-io/bbolt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -98,7 +99,7 @@ func extractDuplicate(incomingURLList []*service.IncomingURL) (remains []*servic
 		b := tx.Bucket([]byte(viper.GetString("db.url_bucket")))
 
 		for _, incomingURL := range incomingURLList {
-			urlString := incomingURL.URL
+			urlString := strings.ToLower(incomingURL.URL)
 			exist := b.Get([]byte(urlString))
 
 			if exist == nil {
