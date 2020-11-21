@@ -193,9 +193,9 @@ func (s TelegramService) sendByStream(media *Media) error {
 	case "photo":
 		imageFile := *media.File
 		for len(imageFile) >= telegramPhotoSize {
-			log.Debug("Photo too large, start compress")
+			log.Info("Photo too large, start compress")
 			imageFile = *zoomeLargeImage(&imageFile, telegramResizeRatio)
-			log.WithField("Resized Size", len(imageFile)).Debug("Resized")
+			log.WithField("Resized Size", len(imageFile)).Info("Resized")
 		}
 		config = tgbotapi.PhotoConfig{
 			Caption: media.Source,
