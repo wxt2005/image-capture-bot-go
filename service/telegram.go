@@ -3,14 +3,18 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/h2non/bimg"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 const telegramEndpointGetFile = "/getFile"
+const telegramPhotoSize = 10 * 1024 * 1024 // Photo size is 10MB
+const telegramResizeRatio = 0.9
 
 type TelegramService struct {
 	Service        Type
@@ -171,8 +175,8 @@ func (s TelegramService) sendByURL(media *Media) error {
 
 	if err != nil {
 		log.WithFields(log.Fields{
-			"config": config,
-			"error":  err,
+			"url":   media.URL,
+			"error": err,
 		}).Error("Send image by url failed")
 	}
 
@@ -187,6 +191,12 @@ func (s TelegramService) sendByStream(media *Media) error {
 
 	switch media.Type {
 	case "photo":
+		imageFile := *media.File
+		for len(imageFile) >= telegramPhotoSize {
+			log.Debug("Photo too large, start compress")
+			imageFile = *zoomeLargeImage(&imageFile, telegramResizeRatio)
+			log.WithField("Resized Size", len(imageFile)).Debug("Resized")
+		}
 		config = tgbotapi.PhotoConfig{
 			Caption: media.Source,
 			BaseFile: tgbotapi.BaseFile{
@@ -196,7 +206,7 @@ func (s TelegramService) sendByStream(media *Media) error {
 				},
 				File: tgbotapi.FileBytes{
 					Name:  media.FileName,
-					Bytes: *media.File,
+					Bytes: imageFile,
 				},
 				UseExisting: false,
 			},
@@ -224,12 +234,41 @@ func (s TelegramService) sendByStream(media *Media) error {
 
 	if err != nil {
 		log.WithFields(log.Fields{
-			"config": config,
-			"error":  err,
+			"url":   media.URL,
+			"error": err,
 		}).Error("Send image by stream failed")
 	}
 
 	return err
+}
+
+func zoomeLargeImage(original *[]byte, ratio float64) *[]byte {
+	log.WithField("ratio", ratio).Debug("Zoom")
+	image := bimg.NewImage(*original)
+	imageDimension, err := image.Size()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return &[]byte{}
+	}
+
+	log.WithFields(log.Fields{
+		"Width":  imageDimension.Width,
+		"Height": imageDimension.Height,
+	}).Debug("Original image dimension")
+	newWidth := int(float64(imageDimension.Width) * ratio)
+	newHeight := int(float64(imageDimension.Height) * ratio)
+	log.WithFields(log.Fields{
+		"Width":  newWidth,
+		"Height": newHeight,
+	}).Debug("New image dimension")
+
+	newImage, err := image.Resize(newWidth, newHeight)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return &[]byte{}
+	}
+
+	return &newImage
 }
 
 func getLargestPhoto(msg *tgbotapi.Message) *tgbotapi.PhotoSize {
