@@ -10,7 +10,7 @@ RUN apt-get update \
 RUN apt-get update \
     && apt-get install -y \
     wget build-essential pkg-config glib2.0-dev libexpat1-dev \
-    libtiff5-dev libjpeg-turbo8-dev libgsf-1-dev libpng libimagequant libwebp \
+    libtiff5-dev libjpeg-turbo8-dev libgsf-1-dev libpng-dev libwebp-dev \
     && wget -O- https://github.com/libvips/libvips/releases/download/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.gz | tar xzC /tmp \
     && cd /tmp/vips-${VIPS_VERSION} \
     && ./configure \
