@@ -2,16 +2,16 @@ module github.com/wxt2005/image-capture-bot-go
 
 go 1.13
 
+replace github.com/search2d/go-pixiv => ./vendor/go-pixiv
+
 require (
 	github.com/ChimeraCoder/anaconda v2.0.0+incompatible
 	github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7 // indirect
 	github.com/azr/backoff v0.0.0-20160115115103-53511d3c7330 // indirect
-	github.com/cosmtrek/air v1.12.0 // indirect
 	github.com/dropbox/dropbox-sdk-go-unofficial v5.6.0+incompatible
 	github.com/dustin/go-jsonpointer v0.0.0-20160814072949-ba0abeacc3dc // indirect
 	github.com/dustin/gojson v0.0.0-20160307161227-2e71ec9dd5ad // indirect
 	github.com/etcd-io/bbolt v1.3.3
-	github.com/fatih/color v1.9.0 // indirect
 	github.com/garyburd/go-oauth v0.0.0-20180319155456-bca2e7f09a17 // indirect
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/golang/protobuf v1.3.3 // indirect
@@ -20,8 +20,8 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/mattn/go-isatty v0.0.12 // indirect
-	github.com/search2d/go-pixiv v0.0.0-20170924023635-40d36dad7cc7
+	github.com/pelletier/go-toml v1.6.0 // indirect
+	github.com/search2d/go-pixiv v0.0.0-00010101000000-000000000000 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
