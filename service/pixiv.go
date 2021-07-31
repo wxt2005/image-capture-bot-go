@@ -43,6 +43,9 @@ func NewPixivService() *PixivService {
 		Password:     viper.GetString("pixiv.password"),
 		ClientID:     viper.GetString("pixiv.client_id"),
 		ClientSecret: viper.GetString("pixiv.client_secret"),
+	}, InitialToken: pixiv.InitialToken{
+		AccessToken:  viper.GetString("pixiv.initial_access_token"),
+		RefreshToken: viper.GetString("pixiv.initial_refresh_token"),
 	}, Headers: headers}
 
 	client := &pixiv.Client{TokenProvider: tokenProvider, Headers: headers}
