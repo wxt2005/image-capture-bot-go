@@ -17,6 +17,8 @@ pixiv:
   password:
   client_id:
   client_secret:
+  initial_access_token:
+  initial_refresh_token:
 
 db:
   db_path: ./external/bot.db
