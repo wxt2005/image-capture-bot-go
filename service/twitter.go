@@ -12,6 +12,7 @@ import (
 )
 
 const mp4ContentType = "video/mp4"
+const twitterUserPrefix = "https://twitter.com/"
 
 type TwitterService struct {
 	Service   Type
@@ -89,11 +90,18 @@ func (s TwitterService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 		resultMedia.Service = string(s.Service)
 		resultMedia.Source = incomingURL.URL
 		resultMedia.FileName = fmt.Sprintf("@%s_%s", tweet.User.ScreenName, resultMedia.FileName)
+		s.completeMediaMeta(resultMedia, &tweet)
 
 		result = append(result, resultMedia)
 	}
 
 	return result, nil
+}
+
+func (s TwitterService) completeMediaMeta(media *Media, tweet *anaconda.Tweet) {
+	media.Author = tweet.User.Name
+	media.AuthorURL = twitterUserPrefix + tweet.User.ScreenName
+	media.Description = string([]rune(tweet.FullText)[tweet.DisplayTextRange[0]:tweet.DisplayTextRange[1]])
 }
 
 func (s TwitterService) extractPhoto(media *anaconda.EntityMedia) *Media {
