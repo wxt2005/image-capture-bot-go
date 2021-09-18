@@ -82,7 +82,9 @@ func (s TwitterService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 		case "photo":
 			resultMedia = s.extractPhoto(&mediaEntity)
 		case "animated_gif":
-			resultMedia = s.extractAnimatedGIF(&mediaEntity)
+			fallthrough
+		case "video":
+			resultMedia = s.extractVideo(&mediaEntity)
 		default:
 			continue
 		}
@@ -116,7 +118,7 @@ func (s TwitterService) extractPhoto(media *anaconda.EntityMedia) *Media {
 	}
 }
 
-func (s TwitterService) extractAnimatedGIF(media *anaconda.EntityMedia) *Media {
+func (s TwitterService) extractVideo(media *anaconda.EntityMedia) *Media {
 	variants := media.VideoInfo.Variants
 	var variant *anaconda.Variant
 	for _, item := range variants {
