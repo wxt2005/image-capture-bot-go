@@ -250,25 +250,20 @@ func (s TelegramService) sendByStream(media *Media) error {
 }
 
 func generateCaption(media *Media) string {
-	var arrowRe = regexp.MustCompile(`<.+?>`)
-	var escapeRe = regexp.MustCompile("(\\.|_|\\*|\\[|\\]|\\(|\\)\\~|>|#|\\+|-|=|\\||\\{|\\}|!|`)")
 	result := ""
 	if media.Title != "" {
-		s := arrowRe.ReplaceAllString(media.Title, " ")
-		s = escapeRe.ReplaceAllString(s, `\$1`)
-		result += ("*" + s + "*\n")
+		result += ("*" + escape(media.Title) + "*\n")
 	}
 	if media.Description != "" {
-		s := arrowRe.ReplaceAllString(media.Description, " ")
-		s = escapeRe.ReplaceAllString(s, `\$1`)
-		result += ("" + s + "\n")
+		result += ("" + escape(media.Description) + "\n")
 	}
 	if media.Author != "" {
 		result += "作者: "
+		authorText := escape(media.Author)
 		if media.AuthorURL != "" {
-			result += ("[" + media.Author + "](" + media.AuthorURL + ")\n")
+			result += ("[" + authorText + "](" + media.AuthorURL + ")\n")
 		} else {
-			result += (media.Author + "\n")
+			result += (authorText + "\n")
 		}
 	} else {
 		result += "\n"
@@ -277,6 +272,14 @@ func generateCaption(media *Media) string {
 		result += ("来源: [" + media.Service + "](" + media.Source + ")\n")
 	}
 	return result
+}
+
+func escape(origin string) string {
+	var arrowRe = regexp.MustCompile(`<.+?>`)
+	var escapeRe = regexp.MustCompile("(\\.|_|\\*|\\[|\\]|\\(|\\)|\\~|>|#|\\+|-|=|\\||\\{|\\}|!|`)")
+	s := arrowRe.ReplaceAllString(origin, " ")
+	s = escapeRe.ReplaceAllString(s, `\$1`)
+	return s
 }
 
 func zoomeLargeImage(original *[]byte, ratio float64) *[]byte {
