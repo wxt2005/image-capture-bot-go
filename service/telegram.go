@@ -250,15 +250,17 @@ func (s TelegramService) sendByStream(media *Media) error {
 }
 
 func generateCaption(media *Media) string {
+	var arrowRe = regexp.MustCompile(`<.+?>`)
+	var escapeRe = regexp.MustCompile("(\\.|_|\\*|\\[|\\]|\\(|\\)\\~|>|#|\\+|-|=|\\||\\{|\\}|!|`)")
 	result := ""
 	if media.Title != "" {
-		result += ("*" + media.Title + "*\n")
+		s := arrowRe.ReplaceAllString(media.Title, " ")
+		s = escapeRe.ReplaceAllString(s, `\$1`)
+		result += ("*" + s + "*\n")
 	}
 	if media.Description != "" {
-		var arrowRe = regexp.MustCompile(`<.+?>`)
 		s := arrowRe.ReplaceAllString(media.Description, " ")
-		var dotRe = regexp.MustCompile(`\.`)
-		s = dotRe.ReplaceAllString(s, `\.`)
+		s = escapeRe.ReplaceAllString(s, `\$1`)
 		result += ("" + s + "\n")
 	}
 	if media.Author != "" {
