@@ -19,6 +19,7 @@ import (
 )
 
 const ugoiraVideoEndpoint = "http://ugoira.dataprocessingclub.org/convert"
+const pixivAuthorPrefix = "https://www.pixiv.net/users/"
 
 type PixivService struct {
 	Service   Type
@@ -140,6 +141,7 @@ func (s PixivService) extractPhoto(illust pixiv.GetIllustDetailIllust) []*Media 
 			File:     &file,
 			Type:     "photo",
 		}
+		s.completeMediaMeta(&media, &illust)
 		result = append(result, &media)
 	}
 
@@ -220,6 +222,7 @@ func (s PixivService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*M
 		result = append(result, s.extractPhoto(illust)...)
 	case "ugoira":
 		if ugoira := s.extractUgoira(incomingURL.URL); ugoira != nil {
+			s.completeMediaMeta(ugoira, &illust)
 			result = append(result, ugoira)
 		}
 	}
@@ -230,4 +233,11 @@ func (s PixivService) ExtractMediaFromURL(incomingURL *IncomingURL) (result []*M
 	}
 
 	return result, nil
+}
+
+func (s PixivService) completeMediaMeta(media *Media, illust *pixiv.GetIllustDetailIllust) {
+	media.Author = illust.User.Name
+	media.AuthorURL = pixivAuthorPrefix + strconv.Itoa(illust.User.ID)
+	media.Title = illust.Title
+	media.Description = illust.Caption
 }
