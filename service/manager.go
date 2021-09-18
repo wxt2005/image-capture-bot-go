@@ -16,13 +16,17 @@ const (
 )
 
 type Media struct {
-	FileName string
-	URL      string
-	File     *[]byte `json:"-"`
-	Type     string  // photo, video
-	Source   string
-	Service  string
-	TGFileID string
+	FileName    string
+	URL         string
+	File        *[]byte `json:"-"`
+	Type        string  // photo, video
+	Source      string
+	Service     string
+	TGFileID    string `json:"-"`
+	Author      string
+	AuthorURL   string
+	Title       string
+	Description string
 }
 
 type IncomingURL struct {

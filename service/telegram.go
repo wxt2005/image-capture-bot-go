@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -24,6 +25,8 @@ type TelegramService struct {
 	bot            *tgbotapi.BotAPI
 	likeBtnText    string
 	likeBtnAction  string
+	openBtnText    string
+	openBtnAction  string
 	forceBtnText   string
 	forceBtnAction string
 }
@@ -145,7 +148,8 @@ func (s TelegramService) sendByURL(media *Media) error {
 	switch media.Type {
 	case "photo":
 		config = tgbotapi.PhotoConfig{
-			Caption: media.Source,
+			Caption:   generateCaption(media),
+			ParseMode: "MarkdownV2",
 			BaseFile: tgbotapi.BaseFile{
 				BaseChat: tgbotapi.BaseChat{
 					ChannelUsername: s.channelName,
@@ -157,7 +161,8 @@ func (s TelegramService) sendByURL(media *Media) error {
 		}
 	case "video":
 		config = tgbotapi.VideoConfig{
-			Caption: media.Source,
+			Caption:   generateCaption(media),
+			ParseMode: "MarkdownV2",
 			BaseFile: tgbotapi.BaseFile{
 				BaseChat: tgbotapi.BaseChat{
 					ChannelUsername: s.channelName,
@@ -184,8 +189,8 @@ func (s TelegramService) sendByURL(media *Media) error {
 }
 
 func (s TelegramService) sendByStream(media *Media) error {
-	keyboardButton := tgbotapi.NewInlineKeyboardButtonData(s.likeBtnText, "like")
-	keyboardRow := tgbotapi.NewInlineKeyboardRow(keyboardButton)
+	likeButton := tgbotapi.NewInlineKeyboardButtonData(s.likeBtnText, "like")
+	keyboardRow := tgbotapi.NewInlineKeyboardRow(likeButton)
 	keyboardMarkup := tgbotapi.NewInlineKeyboardMarkup(keyboardRow)
 	var config tgbotapi.Chattable
 
@@ -198,7 +203,8 @@ func (s TelegramService) sendByStream(media *Media) error {
 			log.WithField("Resized Size", len(imageFile)).Info("Resized")
 		}
 		config = tgbotapi.PhotoConfig{
-			Caption: media.Source,
+			Caption:   generateCaption(media),
+			ParseMode: "MarkdownV2",
 			BaseFile: tgbotapi.BaseFile{
 				BaseChat: tgbotapi.BaseChat{
 					ChannelUsername: s.channelName,
@@ -213,7 +219,8 @@ func (s TelegramService) sendByStream(media *Media) error {
 		}
 	case "video":
 		config = tgbotapi.VideoConfig{
-			Caption: media.Source,
+			Caption:   generateCaption(media),
+			ParseMode: "MarkdownV2",
 			BaseFile: tgbotapi.BaseFile{
 				BaseChat: tgbotapi.BaseChat{
 					ChannelUsername: s.channelName,
@@ -240,6 +247,34 @@ func (s TelegramService) sendByStream(media *Media) error {
 	}
 
 	return err
+}
+
+func generateCaption(media *Media) string {
+	result := ""
+	if media.Title != "" {
+		result += ("*" + media.Title + "*\n")
+	}
+	if media.Description != "" {
+		var arrowRe = regexp.MustCompile(`<.+?>`)
+		s := arrowRe.ReplaceAllString(media.Description, " ")
+		var dotRe = regexp.MustCompile(`\.`)
+		s = dotRe.ReplaceAllString(s, `\.`)
+		result += ("" + s + "\n")
+	}
+	if media.Author != "" {
+		result += "作者: "
+		if media.AuthorURL != "" {
+			result += ("[" + media.Author + "](" + media.AuthorURL + ")\n")
+		} else {
+			result += (media.Author + "\n")
+		}
+	} else {
+		result += "\n"
+	}
+	if media.Source != "" {
+		result += ("来源: [" + media.Service + "](" + media.Source + ")\n")
+	}
+	return result
 }
 
 func zoomeLargeImage(original *[]byte, ratio float64) *[]byte {
