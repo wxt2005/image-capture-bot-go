@@ -29,7 +29,7 @@ func NewTwitterService() *TwitterService {
 
 	return &TwitterService{
 		Service:   Twitter,
-		urlRegexp: regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?twitter\.com\/(.+?)\/status\/(\d+)`),
+		urlRegexp: regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?(?:vx)?twitter\.com\/(.+?)\/status\/(\d+)`),
 		client:    client,
 	}
 }
@@ -42,11 +42,12 @@ func (s TwitterService) CheckValid(urlString string) (*IncomingURL, bool) {
 
 	strID := match[2]
 	intID, _ := strconv.Atoi(strID)
+	url := strings.Replace(match[0], "vxtwitter", "twitter", 1)
 
 	return &IncomingURL{
 		Service:  s.Service,
 		Original: urlString,
-		URL:      match[0],
+		URL:      url,
 		StrID:    strID,
 		IntID:    intID,
 	}, true
