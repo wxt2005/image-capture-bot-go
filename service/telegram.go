@@ -62,10 +62,13 @@ func (s TelegramService) ExtractURLWithEntities(text string, entities *[]tgbotap
 	}
 
 	for _, entity := range *entities {
-		if entity.Type == "url" || entity.Type == "text_link" {
+		if entity.Type == "url" {
 			start := entity.Offset
 			end := entity.Offset + entity.Length
 			urls = append(urls, string([]rune(text)[start:end]))
+		}
+		if entity.Type == "text_link" {
+			urls = append(urls, entity.URL)
 		}
 	}
 
