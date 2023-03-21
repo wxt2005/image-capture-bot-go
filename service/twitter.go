@@ -42,7 +42,7 @@ func (s TwitterService) CheckValid(urlString string) (*IncomingURL, bool) {
 
 	strID := match[2]
 	intID, _ := strconv.Atoi(strID)
-	url := strings.Replace(match[0], "vxtwitter", "twitter", 1)
+	url := fmt.Sprintf("%s%s/status/%s", twitterUserPrefix, match[1], match[2])
 
 	return &IncomingURL{
 		Service:  s.Service,
