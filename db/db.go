@@ -1,9 +1,9 @@
 package db
 
 import (
-	"github.com/etcd-io/bbolt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.etcd.io/bbolt"
 )
 
 var DB *bbolt.DB

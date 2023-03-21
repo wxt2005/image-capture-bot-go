@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/etcd-io/bbolt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wxt2005/image-capture-bot-go/db"
 	"github.com/wxt2005/image-capture-bot-go/service"
+	"go.etcd.io/bbolt"
 )
 
 func MessageHandler(w http.ResponseWriter, r *http.Request) {
