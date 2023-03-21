@@ -121,25 +121,25 @@ func (s TwitterService) extractPhoto(media *anaconda.EntityMedia) *Media {
 
 func (s TwitterService) extractVideo(media *anaconda.EntityMedia) *Media {
 	variants := media.VideoInfo.Variants
-	var variant *anaconda.Variant
+	videoUrl := ""
 	for _, item := range variants {
 		if item.ContentType == mp4ContentType {
-			variant = &item
+			videoUrl = item.Url
 		}
 	}
 
-	if variant == nil {
+	if videoUrl == "" {
 		return nil
 	}
 
-	url := variant.Url
-	urlParts := strings.Split(url, "/")
+	// videoUrl := variant.Url
+	urlParts := strings.Split(videoUrl, "/")
 	// wxt2005_1.mp4
 	fileName := urlParts[len(urlParts)-1]
 
 	return &Media{
 		FileName: fileName,
-		URL:      url,
+		URL:      videoUrl,
 		Type:     "video",
 	}
 }
