@@ -13,6 +13,7 @@ const (
 	Danbooru      = "Danbooru"
 	Dropbox       = "Dropbox"
 	Telegram      = "Telegram"
+	Misskey       = "Misskey"
 )
 
 type Media struct {
@@ -52,6 +53,7 @@ type AllServices struct {
 	Pixiv    *PixivService
 	Tumblr   *TumblrService
 	Twitter  *TwitterService
+	Misskey  *MisskeyService
 	Dropbox  *DropboxService
 	Telegram *TelegramService
 }
@@ -71,11 +73,12 @@ func GetServiceManager() *ServiceManager {
 		pixiv := NewPixivService()
 		tumblr := NewTumblrService()
 		twitter := NewTwitterService()
+		misskey := NewMisskeyService()
 		dropbox := NewDropboxService()
 		telegram := NewTelegramService()
 
-		allServices := &AllServices{danbooru, pixiv, tumblr, twitter, dropbox, telegram}
-		providers := []ProviderService{danbooru, pixiv, tumblr, twitter}
+		allServices := &AllServices{danbooru, pixiv, tumblr, twitter, misskey, dropbox, telegram}
+		providers := []ProviderService{danbooru, pixiv, tumblr, twitter, misskey}
 		consumers := []ConsumerService{telegram, dropbox}
 
 		serviceManagerInstance = &ServiceManager{
