@@ -1,7 +1,7 @@
 FROM ubuntu:focal
 
 ARG VIPS_VERSION=8.10.2
-ARG GO_VERSION=1.15.5
+ARG GO_VERSION=1.19.2
 
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
