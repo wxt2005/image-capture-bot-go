@@ -29,7 +29,7 @@ func NewTwitterService() *TwitterService {
 
 	return &TwitterService{
 		Service:   Twitter,
-		urlRegexp: regexp.MustCompile(`(?i)https?:\/\/(?:(?:www|mobile)\.)?(?:vx)?twitter\.com\/(.+?)\/status\/(\d+)`),
+		urlRegexp: regexp.MustCompile(`(?i)https?:\/\/(?:(?:www|mobile)\.)?(?:vx|fx)?twitter\.com\/(.+?)\/status\/(\d+)`),
 		client:    client,
 	}
 }
