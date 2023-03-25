@@ -20,7 +20,7 @@ type Media struct {
 	FileName    string
 	URL         string
 	File        *[]byte `json:"-"`
-	Type        string  // photo, video
+	Type        string  // photo, video, animation
 	Source      string
 	Service     string
 	TGFileID    string `json:"-"`

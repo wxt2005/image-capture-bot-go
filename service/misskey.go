@@ -120,13 +120,17 @@ func (s MisskeyService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 		var resultMedia *Media
 		fileType := strings.Split(file.Type, "/")[0]
 
-		switch fileType {
-		case "image":
-			resultMedia = s.extractPhoto(&file)
-		case "video":
-			resultMedia = s.extractVideo(&file)
-		default:
-			continue
+		if file.Type == "image/gif" {
+			resultMedia = s.extractAnimation(&file)
+		} else {
+			switch fileType {
+			case "image":
+				resultMedia = s.extractPhoto(&file)
+			case "video":
+				resultMedia = s.extractVideo(&file)
+			default:
+				continue
+			}
 		}
 
 		resultMedia.Service = string(s.Service)
@@ -157,5 +161,13 @@ func (s MisskeyService) extractVideo(file *NoteFile) *Media {
 		FileName: file.Name,
 		URL:      file.URL,
 		Type:     "video",
+	}
+}
+
+func (s MisskeyService) extractAnimation(file *NoteFile) *Media {
+	return &Media{
+		FileName: file.Name,
+		URL:      file.URL,
+		Type:     "animation",
 	}
 }

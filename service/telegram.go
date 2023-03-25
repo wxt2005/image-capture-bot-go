@@ -193,6 +193,18 @@ func (s TelegramService) sendByURL(media *Media) error {
 				File: tgbotapi.FileURL(url),
 			},
 		}
+	case "animation":
+		config = tgbotapi.AnimationConfig{
+			Caption:   generateCaption(media),
+			ParseMode: "MarkdownV2",
+			BaseFile: tgbotapi.BaseFile{
+				BaseChat: tgbotapi.BaseChat{
+					ChannelUsername: s.channelName,
+					ReplyMarkup:     keyboardMarkup,
+				},
+				File: tgbotapi.FileURL(url),
+			},
+		}
 	default:
 		return nil
 	}
@@ -239,6 +251,21 @@ func (s TelegramService) sendByStream(media *Media) error {
 		}
 	case "video":
 		config = tgbotapi.VideoConfig{
+			Caption:   generateCaption(media),
+			ParseMode: "MarkdownV2",
+			BaseFile: tgbotapi.BaseFile{
+				BaseChat: tgbotapi.BaseChat{
+					ChannelUsername: s.channelName,
+					ReplyMarkup:     keyboardMarkup,
+				},
+				File: tgbotapi.FileReader{
+					Name:   media.FileName,
+					Reader: bytes.NewReader(*media.File),
+				},
+			},
+		}
+	case "animation":
+		config = tgbotapi.AnimationConfig{
 			Caption:   generateCaption(media),
 			ParseMode: "MarkdownV2",
 			BaseFile: tgbotapi.BaseFile{
