@@ -30,7 +30,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	var output Response
 
 	var update tgbotapi.Update
-	skipCheckDuplicate := true
+	skipCheckDuplicate := false
 	err = json.Unmarshal(body, &update)
 	if err != nil {
 		w.WriteHeader(500)
