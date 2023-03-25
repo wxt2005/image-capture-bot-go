@@ -77,7 +77,26 @@ func (s TelegramService) ExtractURLWithEntities(text string, entities *[]tgbotap
 }
 
 func (s TelegramService) ExtractURL(msg *tgbotapi.Message) []string {
-	return s.ExtractURLWithEntities(msg.Text, &msg.Entities)
+	var allKeys = make(map[string]bool)
+	var urls = []string{}
+
+	for _, url := range s.ExtractURLWithEntities(msg.Text, &msg.Entities) {
+		if allKeys[url] {
+			continue
+		}
+		allKeys[url] = true
+		urls = append(urls, url)
+	}
+
+	for _, url := range s.ExtractURLWithEntities(msg.Caption, &msg.CaptionEntities) {
+		if allKeys[url] {
+			continue
+		}
+		allKeys[url] = true
+		urls = append(urls, url)
+	}
+
+	return urls
 }
 
 func (s TelegramService) UpdateLikeButton(chatID int64, messageID int, count int) error {
