@@ -46,10 +46,6 @@ func main() {
 	if len(port) == 0 {
 		port = "8080"
 	}
-	host := os.Getenv("HOST")
-	if len(host) == 0 {
-		host = "127.0.0.1"
-	}
 
 	http.HandleFunc("/api/"+viper.GetString("telegram.bot_token")+"/message", controller.MessageHandler)
 	http.HandleFunc("/api/send", controller.APIHandler)
@@ -57,7 +53,7 @@ func main() {
 	log.WithFields(log.Fields{
 		"port": port,
 	}).Info("Server listening...")
-	if err := http.ListenAndServe(host+":"+port, nil); err != nil {
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.WithFields(log.Fields{
 			"port": port,
 		}).Panic("failed to listen port")
