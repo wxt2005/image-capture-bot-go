@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wxt2005/image-capture-bot-go/db"
@@ -30,7 +30,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	var output Response
 
 	var update tgbotapi.Update
-	skipCheckDuplicate := false
+	skipCheckDuplicate := true
 	err = json.Unmarshal(body, &update)
 	if err != nil {
 		w.WriteHeader(500)
@@ -129,11 +129,11 @@ func sendDuplicateMessages(incomingURLList []*service.IncomingURL, chatID int64,
 	}
 }
 
-func saveLike(chatID int64, messageID int, userID int) (count int, ok bool) {
+func saveLike(chatID int64, messageID int, userID int64) (count int, ok bool) {
 	db.DB.Batch(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(viper.GetString("db.like_bucket")))
 		key := fmt.Sprintf("chat_%d_msg_%d", chatID, messageID)
-		var value []int
+		var value []int64
 		liked := false
 
 		exist := b.Get([]byte(key))
@@ -150,7 +150,7 @@ func saveLike(chatID int64, messageID int, userID int) (count int, ok bool) {
 				value = append(value, userID)
 			}
 		} else {
-			value = []int{userID}
+			value = []int64{userID}
 		}
 
 		if liked == false {

@@ -1,13 +1,14 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/h2non/bimg"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -54,11 +55,11 @@ func (s TelegramService) ExtractURLWithEntities(text string, entities *[]tgbotap
 	var urls []string
 
 	if len(text) == 0 {
-		return nil
+		return urls
 	}
 
 	if entities == nil {
-		return nil
+		return urls
 	}
 
 	for _, entity := range *entities {
@@ -76,7 +77,7 @@ func (s TelegramService) ExtractURLWithEntities(text string, entities *[]tgbotap
 }
 
 func (s TelegramService) ExtractURL(msg *tgbotapi.Message) []string {
-	return s.ExtractURLWithEntities(msg.Text, msg.Entities)
+	return s.ExtractURLWithEntities(msg.Text, &msg.Entities)
 }
 
 func (s TelegramService) UpdateLikeButton(chatID int64, messageID int, count int) error {
@@ -158,8 +159,7 @@ func (s TelegramService) sendByURL(media *Media) error {
 					ChannelUsername: s.channelName,
 					ReplyMarkup:     keyboardMarkup,
 				},
-				FileID:      url,
-				UseExisting: true,
+				File: tgbotapi.FileURL(url),
 			},
 		}
 	case "video":
@@ -171,8 +171,7 @@ func (s TelegramService) sendByURL(media *Media) error {
 					ChannelUsername: s.channelName,
 					ReplyMarkup:     keyboardMarkup,
 				},
-				FileID:      url,
-				UseExisting: true,
+				File: tgbotapi.FileURL(url),
 			},
 		}
 	default:
@@ -213,11 +212,10 @@ func (s TelegramService) sendByStream(media *Media) error {
 					ChannelUsername: s.channelName,
 					ReplyMarkup:     keyboardMarkup,
 				},
-				File: tgbotapi.FileBytes{
-					Name:  media.FileName,
-					Bytes: imageFile,
+				File: tgbotapi.FileReader{
+					Name:   media.FileName,
+					Reader: bytes.NewReader(imageFile),
 				},
-				UseExisting: false,
 			},
 		}
 	case "video":
@@ -229,11 +227,10 @@ func (s TelegramService) sendByStream(media *Media) error {
 					ChannelUsername: s.channelName,
 					ReplyMarkup:     keyboardMarkup,
 				},
-				File: tgbotapi.FileBytes{
-					Name:  media.FileName,
-					Bytes: *media.File,
+				File: tgbotapi.FileReader{
+					Name:   media.FileName,
+					Reader: bytes.NewReader(*media.File),
 				},
-				UseExisting: false,
 			},
 		}
 	default:
@@ -319,7 +316,7 @@ func getLargestPhoto(msg *tgbotapi.Message) *tgbotapi.PhotoSize {
 	maxW := 0
 	var result *tgbotapi.PhotoSize
 
-	for _, photo := range *msg.Photo {
+	for _, photo := range msg.Photo {
 		if photo.Width > maxW {
 			maxW = photo.Width
 			result = &photo
