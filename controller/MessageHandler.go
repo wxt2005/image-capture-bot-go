@@ -61,7 +61,19 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	var duplicates []*service.IncomingURL
 	urlStringList := telegramService.ExtractURL(update.Message)
 
-	if update.Message.Photo != nil {
+	incomingURLList := serviceManager.BuildIncomingURL(&urlStringList)
+
+	if !skipCheckDuplicate {
+		incomingURLList, duplicates = extractDuplicate(incomingURLList)
+	}
+
+	if len(duplicates) > 0 {
+		go sendDuplicateMessages(duplicates, update.Message.Chat.ID, update.Message.MessageID)
+	}
+
+	mediaList = append(mediaList, serviceManager.ExtraMediaFromURL(incomingURLList)...)
+
+	if len(mediaList) == 0 && update.Message.Photo != nil {
 		media, remains, _ := telegramService.ExtractMediaFromMsg(update.Message)
 		if len(media) > 0 {
 			mediaList = append(mediaList, media...)
@@ -71,18 +83,6 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 			urlStringList = remains
 		}
 	}
-
-	incomingURLList := serviceManager.BuildIncomingURL(&urlStringList)
-
-	if skipCheckDuplicate != true {
-		incomingURLList, duplicates = extractDuplicate(incomingURLList)
-	}
-
-	if len(duplicates) > 0 {
-		go sendDuplicateMessages(duplicates, update.Message.Chat.ID, update.Message.MessageID)
-	}
-
-	mediaList = append(mediaList, serviceManager.ExtraMediaFromURL(incomingURLList)...)
 
 	if len(mediaList) > 0 {
 		serviceManager.ConsumeMedia(mediaList)
@@ -146,14 +146,14 @@ func saveLike(chatID int64, messageID int, userID int64) (count int, ok bool) {
 					break
 				}
 			}
-			if liked == false {
+			if !liked {
 				value = append(value, userID)
 			}
 		} else {
 			value = []int64{userID}
 		}
 
-		if liked == false {
+		if !liked {
 			json, _ := json.Marshal(value)
 			b.Put([]byte(key), json)
 			ok = true
