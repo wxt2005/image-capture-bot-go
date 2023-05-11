@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode/utf16"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/h2non/bimg"
@@ -66,7 +67,10 @@ func (s TelegramService) ExtractURLWithEntities(text string, entities *[]tgbotap
 		if entity.Type == "url" {
 			start := entity.Offset
 			end := entity.Offset + entity.Length
-			urls = append(urls, string([]rune(text)[start:end]))
+			// Telegram is using utf16 encoding to calculate the offset and length
+			utf16Runes := utf16.Encode([]rune(text))
+			extractedUrl := string(utf16.Decode(utf16Runes[start:end]))
+			urls = append(urls, extractedUrl)
 		}
 		if entity.Type == "text_link" {
 			urls = append(urls, entity.URL)
