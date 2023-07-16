@@ -42,7 +42,7 @@ type Note struct {
 func NewMisskeyService() *MisskeyService {
 	return &MisskeyService{
 		Service:   Misskey,
-		urlRegexp: regexp.MustCompile(`(?i)https?:\/\/misskey\.io\/notes\/(\w+)`),
+		urlRegexp: regexp.MustCompile(`(?i)https?:\/\/misskey\.(io|design)\/notes\/(\w+)`),
 		client:    &http.Client{},
 		endpint:   "https://misskey.io/api/notes/show",
 	}
