@@ -16,7 +16,7 @@ type MisskeyService struct {
 	Service   Type
 	urlRegexp *regexp.Regexp
 	client    *http.Client
-	endpint   string
+	endpoint   string
 }
 
 type NoteFile struct {
@@ -44,7 +44,7 @@ func NewMisskeyService() *MisskeyService {
 		Service:   Misskey,
 		urlRegexp: regexp.MustCompile(`(?i)https?:\/\/misskey\.(io|design)\/notes\/(\w+)`),
 		client:    &http.Client{},
-		endpint:   "https://misskey.io/api/notes/show",
+		endpoint:   "https://misskey.io/api/notes/show",
 	}
 }
 
@@ -76,7 +76,7 @@ func (s MisskeyService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 	}
 
 	var jsonStr = []byte(fmt.Sprintf(`{"noteId":"%s"}`, id))
-	req, err := http.NewRequest("POST", s.endpint, bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest("POST", s.endpoint, bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36")
 	req.Header.Set("Host", "misskey.io")
