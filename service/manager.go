@@ -34,6 +34,7 @@ type IncomingURL struct {
 	Service  Type
 	Original string
 	URL      string
+	Host	 string
 	StrID    string
 	IntID    int
 }

@@ -16,7 +16,6 @@ type MisskeyService struct {
 	Service   Type
 	urlRegexp *regexp.Regexp
 	client    *http.Client
-	endpoint   string
 }
 
 type NoteFile struct {
@@ -42,9 +41,8 @@ type Note struct {
 func NewMisskeyService() *MisskeyService {
 	return &MisskeyService{
 		Service:   Misskey,
-		urlRegexp: regexp.MustCompile(`(?i)https?:\/\/misskey\.(io|design)\/notes\/(\w+)`),
+		urlRegexp: regexp.MustCompile(`(?i)(https?:\/\/misskey\.(?:io|design))\/notes\/(\w+)`),
 		client:    &http.Client{},
-		endpoint:   "https://misskey.io/api/notes/show",
 	}
 }
 
@@ -58,7 +56,8 @@ func (s MisskeyService) CheckValid(urlString string) (*IncomingURL, bool) {
 		Service:  s.Service,
 		Original: urlString,
 		URL:      match[0],
-		StrID:    match[1],
+		Host:     match[1],
+		StrID:    match[2],
 		IntID:    0,
 	}, true
 }
@@ -76,7 +75,7 @@ func (s MisskeyService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 	}
 
 	var jsonStr = []byte(fmt.Sprintf(`{"noteId":"%s"}`, id))
-	req, err := http.NewRequest("POST", s.endpoint, bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/notes/show", incomingURL.Host), bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36")
 	req.Header.Set("Host", "misskey.io")
@@ -135,16 +134,16 @@ func (s MisskeyService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 
 		resultMedia.Service = string(s.Service)
 		resultMedia.Source = incomingURL.URL
-		s.completeMediaMeta(resultMedia, &note)
+		s.completeMediaMeta(resultMedia, &note, incomingURL.Host)
 		result = append(result, resultMedia)
 	}
 
 	return result, nil
 }
 
-func (s MisskeyService) completeMediaMeta(media *Media, note *Note) {
+func (s MisskeyService) completeMediaMeta(media *Media, note *Note, host string) {
 	media.Author = note.User.Name
-	media.AuthorURL = fmt.Sprintf("https://misskey.io/@%s", note.User.Username)
+	media.AuthorURL = fmt.Sprintf("%s/@%s", host, note.User.Username)
 	media.Description = note.Text
 }
 
