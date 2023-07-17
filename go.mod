@@ -13,14 +13,11 @@ require (
 	github.com/dustin/gojson v0.0.0-20160307161227-2e71ec9dd5ad // indirect
 	github.com/garyburd/go-oauth v0.0.0-20180319155456-bca2e7f09a17 // indirect
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
-	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/h2non/bimg v1.1.9
-	github.com/pelletier/go-toml/v2 v2.0.7 // indirect
+	github.com/pelletier/go-toml/v2 v2.0.9 // indirect
 	github.com/search2d/go-pixiv v0.0.0-00010101000000-000000000000
-	github.com/sirupsen/logrus v1.9.0
-	github.com/spf13/afero v1.9.5 // indirect
-	github.com/spf13/viper v1.15.0
+	github.com/sirupsen/logrus v1.9.3
+	github.com/spf13/viper v1.16.0
 	go.etcd.io/bbolt v1.3.7
-	golang.org/x/oauth2 v0.6.0 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	golang.org/x/oauth2 v0.10.0 // indirect
 )
