@@ -3,10 +3,8 @@ telegram:
   channel_name:
 
 twitter:
-  consumer_key:
-  consumer_secret:
-  access_token_key:
-  access_token_secret:
+  bearer_token:
+  auth_token:
 
 dropbox:
   access_token:
