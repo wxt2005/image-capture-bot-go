@@ -15,8 +15,8 @@ Use [air](https://github.com/cosmtrek/air) to auto compile and reload server in 
 # install air
 go get -u github.com/cosmtrek/air
 # use air to enable hot reload
-air
-# endpoint is http://localhost:3000/
+HOST=127.0.0.1 air
+# endpoint is http://127.0.0.1:3000/
 ```
 
 ## Build Docker Image

@@ -48,6 +48,7 @@ func (s TwitterService) CheckValid(urlString string) (*IncomingURL, bool) {
 	strID := match[2]
 	intID, _ := strconv.Atoi(strID)
 	url := fmt.Sprintf("%s%s/status/%s", twitterUserPrefix, match[1], match[2])
+	print(intID)
 
 	return &IncomingURL{
 		Service:  s.Service,
@@ -74,30 +75,39 @@ type TimelineAddEntries struct {
 	Entries []json.RawMessage
 }
 
+type TweetCore struct {
+	UserResults struct {
+		Result struct {
+			Legacy struct {
+				Name       string
+				ScreenName string `json:"screen_name"`
+			}
+		}
+	} `json:"user_results"`
+}
+
+type TweetLegacy struct {
+	FullText         string `json:"full_text"`
+	DisplayTextRange []int  `json:"display_text_range"`
+	Entities         struct {
+		Media []EntityMedia
+	}
+	ExtendedEntities struct {
+		Media []EntityMedia
+	} `json:"extended_entities"`
+}
+
 type TweetEntity struct {
 	Content struct {
 		ItemContent struct {
 			TweetResults struct {
 				Result struct {
-					Core struct {
-						UserResults struct {
-							Result struct {
-								Legacy struct {
-									Name       string
-									ScreenName string `json:"screen_name"`
-								}
-							}
-						} `json:"user_results"`
-					}
-					Legacy struct {
-						FullText         string `json:"full_text"`
-						DisplayTextRange []int  `json:"display_text_range"`
-						Entities         struct {
-							Media []EntityMedia
-						}
-						ExtendedEntities struct {
-							Media []EntityMedia
-						} `json:"extended_entities"`
+					TypeName string `json:"__typename"`
+					Core     TweetCore
+					Legacy   TweetLegacy
+					Tweet    struct {
+						Core   TweetCore
+						Legacy TweetLegacy
 					}
 				}
 			} `json:"tweet_results"`
@@ -175,8 +185,18 @@ func (s TwitterService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 		return result, errors.New("can't parse TweetEntity")
 	}
 
-	mediaEntities := tweetEntity.Content.ItemContent.TweetResults.Result.Legacy.Entities.Media
-	extendedMediaEntities := tweetEntity.Content.ItemContent.TweetResults.Result.Legacy.ExtendedEntities.Media
+	var tweetLegacy TweetLegacy
+	var tweetCore TweetCore
+	if tweetEntity.Content.ItemContent.TweetResults.Result.TypeName == "Tweet" {
+		tweetLegacy = tweetEntity.Content.ItemContent.TweetResults.Result.Legacy
+		tweetCore = tweetEntity.Content.ItemContent.TweetResults.Result.Core
+	} else {
+		tweetLegacy = tweetEntity.Content.ItemContent.TweetResults.Result.Tweet.Legacy
+		tweetCore = tweetEntity.Content.ItemContent.TweetResults.Result.Tweet.Core
+	}
+
+	mediaEntities := tweetLegacy.Entities.Media
+	extendedMediaEntities := tweetLegacy.ExtendedEntities.Media
 
 	if len(extendedMediaEntities) >= len(mediaEntities) {
 		mediaEntities = extendedMediaEntities
@@ -198,8 +218,8 @@ func (s TwitterService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 
 		resultMedia.Service = string(s.Service)
 		resultMedia.Source = incomingURL.URL
-		resultMedia.FileName = fmt.Sprintf("@%s_%s", tweetEntity.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName, resultMedia.FileName)
-		s.completeMediaMeta(resultMedia, &tweetEntity)
+		resultMedia.FileName = fmt.Sprintf("@%s_%s", tweetEntity.Content.ItemContent.TweetResults.Result.Tweet.Core.UserResults.Result.Legacy.ScreenName, resultMedia.FileName)
+		s.completeMediaMeta(resultMedia, &tweetLegacy, &tweetCore)
 
 		result = append(result, resultMedia)
 	}
@@ -207,10 +227,10 @@ func (s TwitterService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 	return result, nil
 }
 
-func (s TwitterService) completeMediaMeta(media *Media, tweet *TweetEntity) {
-	media.Author = tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.Name
-	media.AuthorURL = twitterUserPrefix + tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName
-	media.Description = string([]rune(tweet.Content.ItemContent.TweetResults.Result.Legacy.FullText)[tweet.Content.ItemContent.TweetResults.Result.Legacy.DisplayTextRange[0]:tweet.Content.ItemContent.TweetResults.Result.Legacy.DisplayTextRange[1]])
+func (s TwitterService) completeMediaMeta(media *Media, tweetLegacy *TweetLegacy, tweetCore *TweetCore) {
+	media.Author = tweetCore.UserResults.Result.Legacy.Name
+	media.AuthorURL = twitterUserPrefix + tweetCore.UserResults.Result.Legacy.ScreenName
+	media.Description = string([]rune(tweetLegacy.FullText)[tweetLegacy.DisplayTextRange[0]:tweetLegacy.DisplayTextRange[1]])
 }
 
 func (s TwitterService) extractPhoto(media *EntityMedia) *Media {
