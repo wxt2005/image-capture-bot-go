@@ -37,17 +37,37 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// userID := update.Message.From.ID
-	update.Message.Command()
-	update.Message.CommandArguments()
+	userID := update.Message.From.ID
+
+	// Handle /auth xxxx command
 	if update.Message.Command() == "auth" {
 		key := update.Message.CommandArguments()
-		print(viper.GetString("telegram.auth_key"))
+		isSuccess := false
 		if key == viper.GetString("telegram.auth_key") {
+			isSuccess = saveUserAuth(userID)
+		}
+
+		if isSuccess {
 			go telegramService.SendAuthMessage(update.Message.Chat.ID, update.Message.MessageID, true)
 		} else {
 			go telegramService.SendAuthMessage(update.Message.Chat.ID, update.Message.MessageID, false)
 		}
+		return
+	}
+
+	if update.Message.Command() == "revoke" {
+		isSuccess := revokeUserAuth(userID)
+		if isSuccess {
+			go telegramService.SendRevokeMessage(update.Message.Chat.ID, update.Message.MessageID, true)
+		} else {
+			go telegramService.SendRevokeMessage(update.Message.Chat.ID, update.Message.MessageID, false)
+		}
+		return
+	}
+
+	// Check auth
+	if !isUserAuthed(userID) {
+		return
 	}
 
 	// handle callback
@@ -105,6 +125,51 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	output.Message = MsgSuccess
 	jsonByte, _ := json.Marshal(output)
 	fmt.Fprintf(w, string(jsonByte))
+}
+
+func isUserAuthed(userID int64) (authed bool) {
+	authed = false
+
+	db.DB.Batch(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(viper.GetString("db.auth_bucket")))
+		if (b.Get([]byte(fmt.Sprintf("%d", userID)))) != nil {
+			authed = true
+		}
+		return nil
+	})
+	return
+}
+
+func saveUserAuth(userID int64) bool {
+	err := db.DB.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(viper.GetString("db.auth_bucket")))
+		key := fmt.Sprintf("%d", userID)
+		err := b.Put([]byte(key), []byte("1"))
+		return err
+	})
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Save user auth failed")
+		return false
+	}
+	return true
+}
+
+func revokeUserAuth(userID int64) bool {
+	err := db.DB.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(viper.GetString("db.auth_bucket")))
+		key := fmt.Sprintf("%d", userID)
+		err := b.Delete([]byte(key))
+		return err
+	})
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Revoke user auth failed")
+		return false
+	}
+	return true
 }
 
 func extractDuplicate(incomingURLList []*service.IncomingURL) (remains []*service.IncomingURL, duplicates []*service.IncomingURL) {

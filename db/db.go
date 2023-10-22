@@ -35,6 +35,15 @@ func Init() (*bbolt.DB, error) {
 			return err
 		}
 
+		_, err = tx.CreateBucketIfNotExists([]byte(viper.GetString("db.auth_bucket")))
+		if err != nil {
+			log.WithFields(log.Fields{
+				"bucket": "auth_bucket",
+			}).Error("Failed to create bucket")
+			mainError = err
+			return err
+		}
+
 		return nil
 	})
 
