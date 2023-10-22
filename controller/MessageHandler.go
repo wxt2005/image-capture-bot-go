@@ -113,6 +113,10 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if update.Message == nil {
+		return
+	}
+
 	var mediaList []*service.Media
 	var duplicates []*service.IncomingURL
 	urlStringList := telegramService.ExtractURL(update.Message)
