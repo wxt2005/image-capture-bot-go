@@ -180,6 +180,7 @@ func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Get misskey gif failed")
+		return nil
 	}
 
 	resp, err := httpClient.Do(req)
@@ -187,12 +188,14 @@ func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Get misskey gif failed")
+		return nil
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Get misskey gif failed")
+		return nil
 	}
 
 	defer resp.Body.Close()
@@ -202,6 +205,7 @@ func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Open temp file failed")
+		return nil
 	}
 	defer tempFile.Close()
 
@@ -210,6 +214,7 @@ func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Write to temp file failed")
+		return nil
 	}
 
 	filePath := tempFile.Name()
@@ -225,6 +230,7 @@ func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Convert misskey gif failed")
+		return nil
 	}
 
 	buf, err := ioutil.ReadFile(newFilePath)
@@ -233,6 +239,7 @@ func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Read converted misskey mp4 failed")
+		return nil
 	}
 
 	return &Media{
