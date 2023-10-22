@@ -150,9 +150,6 @@ func (s PixivService) extractPhoto(illust pixiv.GetIllustDetailIllust) []*Media 
 
 func (s PixivService) extractUgoira(pageURL string) *Media {
 	httpClient := &http.Client{}
-	type reqBody struct {
-		URL string `json:"url"`
-	}
 	form := url.Values{}
 	// use gif for now, telegram do not support webm yet
 	form.Add("format", "gif")

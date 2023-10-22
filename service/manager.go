@@ -8,12 +8,12 @@ type Type string
 
 const (
 	Twitter  Type = "Twitter"
-	Tumblr        = "Tumblr"
-	Pixiv         = "Pixiv"
-	Danbooru      = "Danbooru"
-	Dropbox       = "Dropbox"
-	Telegram      = "Telegram"
-	Misskey       = "Misskey"
+	Tumblr   Type = "Tumblr"
+	Pixiv    Type = "Pixiv"
+	Danbooru Type = "Danbooru"
+	Dropbox  Type = "Dropbox"
+	Telegram Type = "Telegram"
+	Misskey  Type = "Misskey"
 )
 
 type Media struct {
@@ -34,7 +34,7 @@ type IncomingURL struct {
 	Service  Type
 	Original string
 	URL      string
-	Host	 string
+	Host     string
 	StrID    string
 	IntID    int
 }
@@ -94,7 +94,7 @@ func GetServiceManager() *ServiceManager {
 func (s ServiceManager) BuildIncomingURL(urlList *[]string) (result []*IncomingURL) {
 	for _, urlString := range *urlList {
 		for _, provider := range s.Providers {
-			if incomingURL, ok := provider.CheckValid(urlString); ok == true {
+			if incomingURL, ok := provider.CheckValid(urlString); ok {
 				result = append(result, incomingURL)
 				break
 			}

@@ -166,13 +166,13 @@ func (s MisskeyService) extractVideo(file *NoteFile) *Media {
 	}
 }
 
-func (s MisskeyService) extractAnimation(file *NoteFile) *Media {
-	return &Media{
-		FileName: file.Name,
-		URL:      file.URL,
-		Type:     "animation",
-	}
-}
+// func (s MisskeyService) extractAnimation(file *NoteFile) *Media {
+// 	return &Media{
+// 		FileName: file.Name,
+// 		URL:      file.URL,
+// 		Type:     "animation",
+// 	}
+// }
 
 func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 	httpClient := &http.Client{}

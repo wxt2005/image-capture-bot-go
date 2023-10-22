@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const telegramEndpointGetFile = "/getFile"
 const telegramPhotoSize = 10 * 1024 * 1024 // Photo size is 10MB
 const telegramResizeRatio = 0.9
 
@@ -27,8 +26,6 @@ type TelegramService struct {
 	bot            *tgbotapi.BotAPI
 	likeBtnText    string
 	likeBtnAction  string
-	openBtnText    string
-	openBtnAction  string
 	forceBtnText   string
 	forceBtnAction string
 }

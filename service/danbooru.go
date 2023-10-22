@@ -98,7 +98,7 @@ func (s DanbooruService) ExtractMediaFromURL(incomingURL *IncomingURL) (result [
 
 		sourceServices := []ProviderService{manager.All.Twitter, manager.All.Pixiv}
 		for _, provider := range sourceServices {
-			if incomingURL, ok := provider.CheckValid(m.Source); ok == true {
+			if incomingURL, ok := provider.CheckValid(m.Source); ok {
 				if media, err := provider.ExtractMediaFromURL(incomingURL); err == nil && len(media) > 0 {
 					result = append(result, media...)
 					return result, nil
