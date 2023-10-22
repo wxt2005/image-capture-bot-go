@@ -133,10 +133,12 @@ func (s MisskeyService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 			}
 		}
 
-		resultMedia.Service = string(s.Service)
-		resultMedia.Source = incomingURL.URL
-		s.completeMediaMeta(resultMedia, &note, incomingURL.Host)
-		result = append(result, resultMedia)
+		if resultMedia != nil {
+			resultMedia.Service = string(s.Service)
+			resultMedia.Source = incomingURL.URL
+			s.completeMediaMeta(resultMedia, &note, incomingURL.Host)
+			result = append(result, resultMedia)
+		}
 	}
 
 	return result, nil
