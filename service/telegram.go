@@ -145,6 +145,27 @@ func (s TelegramService) SendDuplicateMessage(url string, chatID int64, messageI
 	return err
 }
 
+func (s TelegramService) SendAuthMessage(chatID int64, messageID int, isSuccess bool) error {
+	var config tgbotapi.MessageConfig
+	if isSuccess {
+		config = tgbotapi.NewMessage(chatID, "授权成功")
+	} else {
+		config = tgbotapi.NewMessage(chatID, "授权失败")
+	}
+
+	_, err := s.bot.Send(config)
+
+	if err != nil {
+		jsonByte, _ := json.Marshal(config)
+		log.WithFields(log.Fields{
+			"config": string(jsonByte),
+			"error":  err,
+		}).Error("Send auth message failed")
+	}
+
+	return err
+}
+
 func (s TelegramService) ConsumeMedia(mediaList []*Media) {
 	for _, media := range mediaList {
 		var err error

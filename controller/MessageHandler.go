@@ -37,6 +37,19 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// userID := update.Message.From.ID
+	update.Message.Command()
+	update.Message.CommandArguments()
+	if update.Message.Command() == "auth" {
+		key := update.Message.CommandArguments()
+		print(viper.GetString("telegram.auth_key"))
+		if key == viper.GetString("telegram.auth_key") {
+			go telegramService.SendAuthMessage(update.Message.Chat.ID, update.Message.MessageID, true)
+		} else {
+			go telegramService.SendAuthMessage(update.Message.Chat.ID, update.Message.MessageID, false)
+		}
+	}
+
 	// handle callback
 	if update.CallbackQuery != nil {
 		switch update.CallbackQuery.Data {

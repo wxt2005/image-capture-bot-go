@@ -1,6 +1,7 @@
 telegram:
   bot_token:
   channel_name:
+  auth_key:
 
 twitter:
   bearer_token:
@@ -22,6 +23,7 @@ db:
   db_path: ./external/bot.db
   url_bucket: url
   like_bucket: like
+  auth_bucket: auth
 
 danbooru:
   username:
