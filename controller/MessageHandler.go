@@ -47,7 +47,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	if update.Message.Command() == "auth" {
 		key := update.Message.CommandArguments()
 		isSuccess := false
-		if key == viper.GetString("telegram.auth_key") {
+		if update.Message.From != nil && key == viper.GetString("telegram.auth_key") {
 			isSuccess = saveUserAuth(update.Message.From.ID)
 		}
 
@@ -61,7 +61,10 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Handle "/revoke" command
 	if update.Message.Command() == "revoke" {
-		isSuccess := revokeUserAuth(update.Message.From.ID)
+		isSuccess := false
+		if update.Message.From != nil {
+			isSuccess = revokeUserAuth(update.Message.From.ID)
+		}
 		if isSuccess {
 			go telegramService.SendRevokeMessage(update.Message.Chat.ID, update.Message.MessageID, true)
 		} else {
@@ -71,7 +74,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check auth
-	if !isUserAuthed(update.Message.From.ID) {
+	if update.Message.From != nil && !isUserAuthed(update.Message.From.ID) {
 		go telegramService.SendNoPremissionMessage(update.Message.Chat.ID, update.Message.MessageID)
 		return
 	}
