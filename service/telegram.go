@@ -166,6 +166,22 @@ func (s TelegramService) SendAuthMessage(chatID int64, messageID int, isSuccess 
 	return err
 }
 
+func (s TelegramService) SendWelcomeMessage(chatID int64, messageID int) error {
+	config := tgbotapi.NewMessage(chatID, "meow")
+
+	_, err := s.bot.Send(config)
+
+	if err != nil {
+		jsonByte, _ := json.Marshal(config)
+		log.WithFields(log.Fields{
+			"config": string(jsonByte),
+			"error":  err,
+		}).Error("Send auth message failed")
+	}
+
+	return err
+}
+
 func (s TelegramService) SendRevokeMessage(chatID int64, messageID int, isSuccess bool) error {
 	var config tgbotapi.MessageConfig
 	if isSuccess {

@@ -39,7 +39,13 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID := update.Message.From.ID
 
-	// Handle /auth xxxx command
+	// Handle "/start" command
+	if update.Message.Command() == "start" {
+		go telegramService.SendWelcomeMessage(update.Message.Chat.ID, update.Message.MessageID)
+		return
+	}
+
+	// Handle "/auth xxxx" command
 	if update.Message.Command() == "auth" {
 		key := update.Message.CommandArguments()
 		isSuccess := false
@@ -55,6 +61,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Handle "/revoke" command
 	if update.Message.Command() == "revoke" {
 		isSuccess := revokeUserAuth(userID)
 		if isSuccess {
