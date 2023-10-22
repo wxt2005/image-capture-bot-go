@@ -37,55 +37,69 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Handle "/start" command
-	if update.Message.Command() == "start" {
-		go telegramService.SendWelcomeMessage(update.Message.Chat.ID, update.Message.MessageID)
-		return
-	}
-
-	// Handle "/auth xxxx" command
-	if update.Message.Command() == "auth" {
-		key := update.Message.CommandArguments()
-		isSuccess := false
-		if update.Message.From != nil && key == viper.GetString("telegram.auth_key") {
-			isSuccess = saveUserAuth(update.Message.From.ID)
+	if update.Message != nil {
+		if update.Message.From == nil {
+			return
 		}
 
-		if isSuccess {
-			go telegramService.SendAuthMessage(update.Message.Chat.ID, update.Message.MessageID, true)
-		} else {
-			go telegramService.SendAuthMessage(update.Message.Chat.ID, update.Message.MessageID, false)
-		}
-		return
-	}
+		userID := update.Message.From.ID
+		chatID := update.Message.Chat.ID
+		messageID := update.Message.MessageID
 
-	// Handle "/revoke" command
-	if update.Message.Command() == "revoke" {
-		isSuccess := false
-		if update.Message.From != nil {
-			isSuccess = revokeUserAuth(update.Message.From.ID)
+		// Handle "/start" command
+		if update.Message.Command() == "start" {
+			go telegramService.SendWelcomeMessage(chatID, messageID)
+			return
 		}
-		if isSuccess {
-			go telegramService.SendRevokeMessage(update.Message.Chat.ID, update.Message.MessageID, true)
-		} else {
-			go telegramService.SendRevokeMessage(update.Message.Chat.ID, update.Message.MessageID, false)
+
+		// Handle "/auth xxxx" command
+		if update.Message.Command() == "auth" {
+			key := update.Message.CommandArguments()
+			isSuccess := false
+			if key == viper.GetString("telegram.auth_key") {
+				isSuccess = saveUserAuth(userID)
+			}
+
+			if isSuccess {
+				go telegramService.SendAuthMessage(chatID, messageID, true)
+			} else {
+				go telegramService.SendAuthMessage(chatID, messageID, false)
+			}
+			return
 		}
-		return
-	}
 
-	// Check auth
-	if update.Message.From != nil && !isUserAuthed(update.Message.From.ID) {
-		go telegramService.SendNoPremissionMessage(update.Message.Chat.ID, update.Message.MessageID)
-		return
-	}
+		// Handle "/revoke" command
+		if update.Message.Command() == "revoke" {
+			isSuccess := revokeUserAuth(userID)
+			if isSuccess {
+				go telegramService.SendRevokeMessage(chatID, messageID, true)
+			} else {
+				go telegramService.SendRevokeMessage(chatID, messageID, false)
+			}
+			return
+		}
 
-	// handle callback
-	if update.CallbackQuery != nil {
+		// Check auth
+		if !isUserAuthed(userID) {
+			go telegramService.SendNoPremissionMessage(chatID, messageID)
+			return
+		}
+	} else if update.CallbackQuery != nil {
+		if update.CallbackQuery.From == nil {
+			return
+		}
+
+		userID := update.CallbackQuery.From.ID
+		chatID := update.CallbackQuery.Message.Chat.ID
+		messageID := update.CallbackQuery.Message.MessageID
+		// Check auth
+		if !isUserAuthed(userID) {
+			go telegramService.SendNoPremissionMessage(chatID, messageID)
+			return
+		}
+
 		switch update.CallbackQuery.Data {
 		case "like":
-			chatID := update.CallbackQuery.Message.Chat.ID
-			messageID := update.CallbackQuery.Message.MessageID
-			userID := update.CallbackQuery.From.ID
 			count, ok := saveLike(chatID, messageID, userID)
 			if ok {
 				go telegramService.UpdateLikeButton(chatID, messageID, count)
