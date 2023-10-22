@@ -74,6 +74,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Check auth
 	if !isUserAuthed(userID) {
+		go telegramService.SendNoPremissionMessage(update.Message.Chat.ID, update.Message.MessageID)
 		return
 	}
 

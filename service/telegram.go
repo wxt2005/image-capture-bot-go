@@ -182,6 +182,22 @@ func (s TelegramService) SendWelcomeMessage(chatID int64, messageID int) error {
 	return err
 }
 
+func (s TelegramService) SendNoPremissionMessage(chatID int64, messageID int) error {
+	config := tgbotapi.NewMessage(chatID, "您没有执行此操作的权限，请联系管理员")
+
+	_, err := s.bot.Send(config)
+
+	if err != nil {
+		jsonByte, _ := json.Marshal(config)
+		log.WithFields(log.Fields{
+			"config": string(jsonByte),
+			"error":  err,
+		}).Error("Send auth message failed")
+	}
+
+	return err
+}
+
 func (s TelegramService) SendRevokeMessage(chatID int64, messageID int, isSuccess bool) error {
 	var config tgbotapi.MessageConfig
 	if isSuccess {
