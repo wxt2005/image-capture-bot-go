@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	ffmpeg "github.com/u2takey/ffmpeg-go"
 )
 
 type MisskeyService struct {
@@ -120,7 +121,7 @@ func (s MisskeyService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 		fileType := strings.Split(file.Type, "/")[0]
 
 		if file.Type == "image/gif" {
-			resultMedia = s.extractAnimation(&file)
+			resultMedia = s.extractGifAnimation(&file)
 		} else {
 			switch fileType {
 			case "image":
@@ -167,6 +168,77 @@ func (s MisskeyService) extractAnimation(file *NoteFile) *Media {
 	return &Media{
 		FileName: file.Name,
 		URL:      file.URL,
+		Type:     "animation",
+	}
+}
+
+func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
+	httpClient := &http.Client{}
+
+	req, err := http.NewRequest("GET", file.URL, nil)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Get misskey gif failed")
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Get misskey gif failed")
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Get misskey gif failed")
+	}
+
+	defer resp.Body.Close()
+
+	tempFile, err := ioutil.TempFile("", file.Name+".*")
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Open temp file failed")
+	}
+	defer tempFile.Close()
+
+	_, err = tempFile.Write(body)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Write to temp file failed")
+	}
+
+	filePath := tempFile.Name()
+	newFilePath := filePath + ".mp4"
+
+	err = ffmpeg.Input(filePath, ffmpeg.KwArgs{}).
+		Output(newFilePath, ffmpeg.KwArgs{"c:v": "libx264", "pix_fmt": "yuv420p"}).
+		OverWriteOutput().
+		// ErrorToStdOut().
+		Run()
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Convert misskey gif failed")
+	}
+
+	buf, err := ioutil.ReadFile(newFilePath)
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Read converted misskey mp4 failed")
+	}
+
+	return &Media{
+		FileName: file.Name,
+		URL:      file.URL,
+		File:     &buf,
 		Type:     "animation",
 	}
 }
