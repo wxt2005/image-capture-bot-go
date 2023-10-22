@@ -84,20 +84,24 @@ func (s TelegramService) ExtractURL(msg *tgbotapi.Message) []string {
 	var allKeys = make(map[string]bool)
 	var urls = []string{}
 
-	for _, url := range s.ExtractURLWithEntities(msg.Text, &msg.Entities) {
-		if allKeys[url] {
-			continue
+	if msg.Text != "" && msg.Entities != nil {
+		for _, url := range s.ExtractURLWithEntities(msg.Text, &msg.Entities) {
+			if allKeys[url] {
+				continue
+			}
+			allKeys[url] = true
+			urls = append(urls, url)
 		}
-		allKeys[url] = true
-		urls = append(urls, url)
 	}
 
-	for _, url := range s.ExtractURLWithEntities(msg.Caption, &msg.CaptionEntities) {
-		if allKeys[url] {
-			continue
+	if msg.Caption != "" && msg.CaptionEntities != nil {
+		for _, url := range s.ExtractURLWithEntities(msg.Caption, &msg.CaptionEntities) {
+			if allKeys[url] {
+				continue
+			}
+			allKeys[url] = true
+			urls = append(urls, url)
 		}
-		allKeys[url] = true
-		urls = append(urls, url)
 	}
 
 	return urls
