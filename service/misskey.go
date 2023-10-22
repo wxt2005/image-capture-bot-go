@@ -225,7 +225,7 @@ func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 	err = ffmpeg.Input(filePath, ffmpeg.KwArgs{}).
 		Output(newFilePath, ffmpeg.KwArgs{"c:v": "libx264", "pix_fmt": "yuv420p"}).
 		OverWriteOutput().
-		ErrorToStdOut().
+		// ErrorToStdOut().
 		Run()
 
 	if err != nil {
@@ -245,7 +245,7 @@ func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 	}
 
 	return &Media{
-		FileName: file.Name,
+		FileName: strings.Split(file.Name, ".")[0] + ".mp4",
 		URL:      file.URL,
 		File:     &buf,
 		Type:     "animation",
