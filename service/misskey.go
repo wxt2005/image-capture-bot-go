@@ -175,8 +175,10 @@ func (s MisskeyService) extractVideo(file *NoteFile) *Media {
 // }
 
 func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
-	httpClient := &http.Client{}
+	urlParts := strings.Split(file.URL, "/")
+	actualFileName := urlParts[len(urlParts)-1]
 
+	httpClient := &http.Client{}
 	req, err := http.NewRequest("GET", file.URL, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -202,7 +204,7 @@ func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 
 	defer resp.Body.Close()
 
-	tempFile, err := ioutil.TempFile("", file.Name+".*")
+	tempFile, err := ioutil.TempFile("", actualFileName+".*.gif")
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -223,9 +225,9 @@ func (s MisskeyService) extractGifAnimation(file *NoteFile) *Media {
 	newFilePath := filePath + ".mp4"
 
 	err = ffmpeg.Input(filePath, ffmpeg.KwArgs{}).
-		Output(newFilePath, ffmpeg.KwArgs{"c:v": "libx264", "pix_fmt": "yuv420p"}).
+		Output(newFilePath, ffmpeg.KwArgs{"c:v": "libx264", "pix_fmt": "yuv420p", "vf": "pad=ceil(iw/2)*2:ceil(ih/2)*2"}).
 		OverWriteOutput().
-		// ErrorToStdOut().
+		ErrorToStdOut().
 		Run()
 
 	if err != nil {
