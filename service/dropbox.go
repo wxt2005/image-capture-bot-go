@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox"
-	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox/files"
+	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
+	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox/files"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -32,11 +32,11 @@ func (s DropboxService) ConsumeMedia(mediaList []*Media) {
 		path := fmt.Sprintf("%s/%s/%s", viper.GetString("dropbox.save_path"), media.Service, media.FileName)
 		// stream upload
 		if media.File != nil {
-			commitInfo := *files.NewCommitInfo(path)
-			commitInfo.Autorename = true
-			commitInfo.Mute = true
+			uploadArg := *files.NewUploadArg(path)
+			uploadArg.Autorename = true
+			uploadArg.Mute = true
 			reader := bytes.NewReader(*media.File)
-			_, err := db.Upload(&commitInfo, reader)
+			_, err := db.Upload(&uploadArg, reader)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"error": err,
