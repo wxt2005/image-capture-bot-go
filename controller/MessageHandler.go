@@ -92,11 +92,6 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 		userID := update.CallbackQuery.From.ID
 		chatID := update.CallbackQuery.Message.Chat.ID
 		messageID := update.CallbackQuery.Message.MessageID
-		// Check auth
-		if !isUserAuthed(userID) {
-			go telegramService.SendNoPremissionMessage(chatID, messageID)
-			return
-		}
 
 		switch update.CallbackQuery.Data {
 		case "like":
@@ -107,6 +102,11 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(200)
 			return
 		case "force":
+			// Check auth
+			if !isUserAuthed(userID) {
+				go telegramService.SendNoPremissionMessage(chatID, messageID)
+				return
+			}
 			// extract Message, go through
 			update.Message = update.CallbackQuery.Message
 			skipCheckDuplicate = true
