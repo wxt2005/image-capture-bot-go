@@ -43,6 +43,7 @@ RUN wget -O- https://github.com/libvips/libvips/releases/download/v${LIBVIPS_VER
     && meson compile \
     && meson test \
     && meson install \
+    && ldconfig \
     && rm -rf /tmp/vips-${LIBVIPS_VERSION}
 RUN wget https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
 ENV PATH $PATH:/usr/local/go/bin
