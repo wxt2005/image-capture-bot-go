@@ -17,6 +17,7 @@ import (
 
 const telegramPhotoSize = 10 * 1024 * 1024 // Photo size is 10MB
 const telegramResizeRatio = 0.8
+const retryLimit = 5
 
 type TelegramService struct {
 	Service        Type
@@ -224,7 +225,7 @@ func (s TelegramService) ConsumeMedia(mediaList []*Media) {
 	for _, media := range mediaList {
 		var err error
 		if media.File != nil {
-			err = s.sendByStream(media)
+			err = s.sendByStream(media, false, 0)
 		} else {
 			err = s.sendByURL(media)
 		}
@@ -300,7 +301,7 @@ func (s TelegramService) sendByURL(media *Media) error {
 	return err
 }
 
-func (s TelegramService) sendByStream(media *Media) error {
+func (s TelegramService) sendByStream(media *Media, forceRisze bool, retryCount int) error {
 	likeButton := tgbotapi.NewInlineKeyboardButtonData(s.likeBtnText, "like")
 	keyboardRow := tgbotapi.NewInlineKeyboardRow(likeButton)
 	keyboardMarkup := tgbotapi.NewInlineKeyboardMarkup(keyboardRow)
@@ -313,6 +314,10 @@ func (s TelegramService) sendByStream(media *Media) error {
 			log.Info("Photo too large, start compress")
 			imageFile = *zoomeLargeImage(&imageFile, telegramResizeRatio)
 			log.WithField("Resized Size", len(imageFile)).Info("Resized")
+		}
+		if forceRisze && retryCount < retryLimit {
+			imageFile = *zoomeLargeImage(&imageFile, telegramResizeRatio)
+			log.WithField("Resized Size", len(imageFile)).Info("Force Resized")
 		}
 		config = tgbotapi.PhotoConfig{
 			Caption:   generateCaption(media),
@@ -369,6 +374,12 @@ func (s TelegramService) sendByStream(media *Media) error {
 			"url":   media.URL,
 			"error": err,
 		}).Error("Send image by stream failed")
+
+		// if message includes PHOTO_INVALID_DIMENSIONS, try to send again
+		if strings.Contains(err.Error(), "PHOTO_INVALID_DIMENSIONS") {
+			log.Info("Try to send again")
+			s.sendByStream(media, true, retryCount+1)
+		}
 	}
 
 	return err
