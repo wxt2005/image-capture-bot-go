@@ -17,6 +17,10 @@ RUN apt-get install -y \
     wget
 RUN pip3 install meson
 RUN apt-get install -y \
+    pkg-config \
+    glib2.0-dev \
+    libpng-dev \
+    ffmpeg \
     libfftw3-dev \
     libopenexr-dev \
     libgsf-1-dev \
