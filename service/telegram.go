@@ -16,7 +16,7 @@ import (
 )
 
 const telegramPhotoSize = 10 * 1024 * 1024 // Photo size is 10MB
-const telegramResizeRatio = 0.9
+const telegramResizeRatio = 0.8
 
 type TelegramService struct {
 	Service        Type
