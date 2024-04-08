@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM ubuntu:jammy
 
 ARG LIBVIPS_VERSION=8.13.3
 ARG GO_VERSION=1.21.3
@@ -8,7 +8,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt-get update 
 RUN apt-get remove libvips42
 RUN apt-get install -y software-properties-common
-RUN add-apt-repository ppa:lovell/cgif && apt-get update && apt-get install -y libcgif-dev
+RUN apt-get update && apt-get install -y libcgif-dev
 RUN apt-get install -y \
     build-essential \
     ninja-build \
