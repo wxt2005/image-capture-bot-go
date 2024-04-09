@@ -23,6 +23,7 @@ type S3Service struct {
 
 func NewS3Service() *S3Service {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(viper.GetString("s3.region")),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(viper.GetString("s3.access_key_id"), viper.GetString("s3.secret_access_key"), "")),
 	)
 
