@@ -15,7 +15,7 @@ import (
 )
 
 const mp4ContentType = "video/mp4"
-const twitterUserPrefix = "https://twitter.com/"
+const twitterUserPrefix = "https://x.com/"
 
 type TwitterService struct {
 	Service     Type
@@ -31,7 +31,7 @@ func NewTwitterService() *TwitterService {
 
 	return &TwitterService{
 		Service:     Twitter,
-		urlRegexp:   regexp.MustCompile(`(?i)https?:\/\/(?:(?:www|mobile)\.)?(?:vx|fx)?(?:twitter|x)\.com\/(.+?)\/status\/(\d+)`),
+		urlRegexp:   regexp.MustCompile(`(?i)https?:\/\/(?:(?:www|mobile)\.)?(?:vx|fx|fixup)?(?:twitter|x)\.com\/(.+?)\/status\/(\d+)`),
 		bearerToken: bearerToken,
 		authToken:   authToken,
 		client:      &http.Client{},
