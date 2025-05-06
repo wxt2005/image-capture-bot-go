@@ -27,6 +27,10 @@ $ HOST=127.0.0.1 air
 $ brew install libvips
 ```
 
+## Documentations
+
+[API Documentations](./API_Documentation.md)
+
 ## Build Docker Image
 
 ```sh
