@@ -11,22 +11,30 @@ cp ./external/config-sample.yml ./external/config.yml
 
 Use [air](https://github.com/cosmtrek/air) to auto compile and reload server in development.
 
-```bash
+```sh
 # install air
-go install github.com/air-verse/air@latest
+$ go install github.com/air-verse/air@latest
 # use air to enable hot reload
-HOST=127.0.0.1 air
+$ HOST=127.0.0.1 air
 # endpoint is http://127.0.0.1:3000/
+```
+
+### Troubleshooting
+
+#### Package 'vips' not found
+
+```sh
+$ brew install libvips
 ```
 
 ## Build Docker Image
 
-```bash
-docker build -t image-capture-bot-go:0.0.1 .
+```sh
+$ docker build -t image-capture-bot-go:0.0.1 .
 ```
 
 ## Run Docker Container
 
-```bash
-docker run -it -p 3000:8080 -v /path/to/external:/go/image-capture-bot-go/external image-capture-bot-go:latest
+```sh
+$ docker run -it -p 3000:8080 -v /path/to/external:/go/image-capture-bot-go/external image-capture-bot-go:latest
 ```
