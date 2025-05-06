@@ -13,7 +13,7 @@ Use [air](https://github.com/cosmtrek/air) to auto compile and reload server in 
 
 ```bash
 # install air
-go get -u github.com/cosmtrek/air
+go install github.com/air-verse/air@latest
 # use air to enable hot reload
 HOST=127.0.0.1 air
 # endpoint is http://127.0.0.1:3000/

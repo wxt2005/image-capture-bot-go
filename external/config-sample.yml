@@ -1,7 +1,7 @@
 telegram:
   bot_token:
-  channel_name:
-  auth_key:
+  channel_name: "@channel"
+  auth_key: test
 
 twitter:
   bearer_token:
@@ -31,6 +31,7 @@ danbooru:
 
 s3:
   bucket:
+  region: ap-northeast-1
   save_path: "."
   access_key_id:
   secret_access_key:
