@@ -184,7 +184,7 @@ func (s TwitterService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 	}
 
 	var timelineAddEntries TimelineAddEntries
-	err = json.Unmarshal(tweetResponse.Data.ThreadedConversationWithInjectionsV2.Instructions[0], &timelineAddEntries)
+	err = json.Unmarshal(tweetResponse.Data.ThreadedConversationWithInjectionsV2.Instructions[1], &timelineAddEntries)
 	if err != nil {
 		return result, errors.New("can't parse TimelineAddEntries")
 	}
