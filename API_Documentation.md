@@ -134,6 +134,7 @@ The bot can extract media from the following services:
 - Pixiv
 - Danbooru
 - Misskey
+- Bluesky
 
 Media can be consumed by:
 

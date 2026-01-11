@@ -29,6 +29,9 @@ danbooru:
   username:
   key: 
 
+bluesky:
+  # No authentication required for public posts
+
 s3:
   bucket:
   region: ap-northeast-1
