@@ -85,12 +85,11 @@ func (s BlueskyService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 	}
 
 	// Extract the main post from the thread
-	threadView, ok := output.Thread.(*bsky.FeedDefs_ThreadViewPost)
-	if !ok {
+	if output.Thread.FeedDefs_ThreadViewPost == nil {
 		return result, fmt.Errorf("unexpected thread type")
 	}
 
-	post := threadView.Post
+	post := output.Thread.FeedDefs_ThreadViewPost.Post
 
 	// Extract author information
 	author := post.Author.DisplayName
@@ -107,28 +106,27 @@ func (s BlueskyService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Media,
 
 	// Extract media from embed
 	if post.Embed != nil {
-		switch embed := post.Embed.Val.(type) {
-		case *bsky.EmbedImages_View:
-			for _, image := range embed.Images {
+		if post.Embed.EmbedImages_View != nil {
+			for _, image := range post.Embed.EmbedImages_View.Images {
 				media := s.extractImage(image, incomingURL.URL, *author, authorURL, description)
 				result = append(result, media)
 			}
-		case *bsky.EmbedVideo_View:
-			media := s.extractVideo(embed, incomingURL.URL, *author, authorURL, description)
+		} else if post.Embed.EmbedVideo_View != nil {
+			media := s.extractVideo(post.Embed.EmbedVideo_View, incomingURL.URL, *author, authorURL, description)
 			if media != nil {
 				result = append(result, media)
 			}
-		case *bsky.EmbedRecordWithMedia_View:
+		} else if post.Embed.EmbedRecordWithMedia_View != nil {
+			embed := post.Embed.EmbedRecordWithMedia_View
 			// Handle posts with quoted posts that have media
 			if mediaEmbed := embed.Media; mediaEmbed != nil {
-				switch mediaView := mediaEmbed.Val.(type) {
-				case *bsky.EmbedImages_View:
-					for _, image := range mediaView.Images {
+				if mediaEmbed.EmbedImages_View != nil {
+					for _, image := range mediaEmbed.EmbedImages_View.Images {
 						media := s.extractImage(image, incomingURL.URL, *author, authorURL, description)
 						result = append(result, media)
 					}
-				case *bsky.EmbedVideo_View:
-					media := s.extractVideo(mediaView, incomingURL.URL, *author, authorURL, description)
+				} else if mediaEmbed.EmbedVideo_View != nil {
+					media := s.extractVideo(mediaEmbed.EmbedVideo_View, incomingURL.URL, *author, authorURL, description)
 					if media != nil {
 						result = append(result, media)
 					}
