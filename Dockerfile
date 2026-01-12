@@ -1,7 +1,7 @@
 FROM ubuntu:jammy
 
 ARG LIBVIPS_VERSION=8.13.3
-ARG GO_VERSION=1.21.3
+ARG GO_VERSION=1.25.5
 
 ENV TZ=Asia/Tokyo
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -50,7 +50,7 @@ RUN wget -O- https://github.com/libvips/libvips/releases/download/v${LIBVIPS_VER
     && ldconfig \
     && rm -rf /tmp/vips-${LIBVIPS_VERSION}
 RUN wget https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-ENV PATH $PATH:/usr/local/go/bin
+ENV PATH=$PATH:/usr/local/go/bin
 
 RUN mkdir -p /go/image-capture-bot-go
 WORKDIR /go/image-capture-bot-go
