@@ -7,4 +7,3 @@ image-capture-bot-go
 .vscode
 tmp
 vendor/*
-!vendor/go-pixiv

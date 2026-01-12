@@ -2,7 +2,7 @@ module github.com/wxt2005/image-capture-bot-go
 
 go 1.25
 
-replace github.com/search2d/go-pixiv => ./vendor/go-pixiv
+replace github.com/search2d/go-pixiv => ./local-vendor/go-pixiv
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.26.1
