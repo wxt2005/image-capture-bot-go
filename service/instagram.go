@@ -75,7 +75,7 @@ func (s InstagramService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Medi
 	var result []*Media
 
 	// Try using Instagram's oEmbed API
-	oembedURL := fmt.Sprintf("https://graph.facebook.com/v12.0/instagram_oembed?url=%s&fields=thumbnail_url,author_name,author_url,media_id,title",
+	oembedURL := fmt.Sprintf("https://graph.facebook.com/v18.0/instagram_oembed?url=%s&fields=thumbnail_url,author_name,author_url,media_id,title",
 		url.QueryEscape(incomingURL.URL))
 
 	req, err := http.NewRequest("GET", oembedURL, nil)
