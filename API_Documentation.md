@@ -135,6 +135,7 @@ The bot can extract media from the following services:
 - Danbooru
 - Misskey
 - Bluesky
+- Instagram
 
 Media can be consumed by:
 
