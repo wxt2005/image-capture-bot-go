@@ -178,22 +178,36 @@ func (s InstagramService) extractMetadata(incomingURL *IncomingURL) (*instagramM
 		return metadata, err
 	}
 
-	// Extract og:title
-	ogTitleRegex := regexp.MustCompile(`<meta\s+property="og:title"\s+content="([^"]+)"`)
-	if ogTitleMatch := ogTitleRegex.FindSubmatch(body); ogTitleMatch != nil && len(ogTitleMatch) > 1 {
-		metadata.Title = string(ogTitleMatch[1])
+	// Extract og:title - handle multi-line meta tags
+	// Match property="og:title" followed by content="..." in any order
+	ogTitleRegex := regexp.MustCompile(`(?s)<meta[^>]*property\s*=\s*["']og:title["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>|<meta[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:title["'][^>]*>`)
+	if ogTitleMatch := ogTitleRegex.FindSubmatch(body); ogTitleMatch != nil {
+		if len(ogTitleMatch) > 1 && len(ogTitleMatch[1]) > 0 {
+			metadata.Title = string(ogTitleMatch[1])
+		} else if len(ogTitleMatch) > 2 && len(ogTitleMatch[2]) > 0 {
+			metadata.Title = string(ogTitleMatch[2])
+		}
 	}
 
-	// Extract og:description
-	ogDescRegex := regexp.MustCompile(`<meta\s+property="og:description"\s+content="([^"]+)"`)
-	if ogDescMatch := ogDescRegex.FindSubmatch(body); ogDescMatch != nil && len(ogDescMatch) > 1 {
-		metadata.Description = string(ogDescMatch[1])
+	// Extract og:description - handle multi-line meta tags
+	ogDescRegex := regexp.MustCompile(`(?s)<meta[^>]*property\s*=\s*["']og:description["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>|<meta[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:description["'][^>]*>`)
+	if ogDescMatch := ogDescRegex.FindSubmatch(body); ogDescMatch != nil {
+		if len(ogDescMatch) > 1 && len(ogDescMatch[1]) > 0 {
+			metadata.Description = string(ogDescMatch[1])
+		} else if len(ogDescMatch) > 2 && len(ogDescMatch[2]) > 0 {
+			metadata.Description = string(ogDescMatch[2])
+		}
 	}
 
-	// Extract og:type
-	ogTypeRegex := regexp.MustCompile(`<meta\s+property="og:type"\s+content="([^"]+)"`)
-	if ogTypeMatch := ogTypeRegex.FindSubmatch(body); ogTypeMatch != nil && len(ogTypeMatch) > 1 {
-		ogType := string(ogTypeMatch[1])
+	// Extract og:type - handle multi-line meta tags
+	ogTypeRegex := regexp.MustCompile(`(?s)<meta[^>]*property\s*=\s*["']og:type["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>|<meta[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:type["'][^>]*>`)
+	if ogTypeMatch := ogTypeRegex.FindSubmatch(body); ogTypeMatch != nil {
+		var ogType string
+		if len(ogTypeMatch) > 1 && len(ogTypeMatch[1]) > 0 {
+			ogType = string(ogTypeMatch[1])
+		} else if len(ogTypeMatch) > 2 && len(ogTypeMatch[2]) > 0 {
+			ogType = string(ogTypeMatch[2])
+		}
 		if strings.Contains(ogType, "video") {
 			metadata.MediaType = "video"
 		}
