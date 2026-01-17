@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"regexp"
@@ -15,8 +16,6 @@ type InstagramService struct {
 	urlRegexp *regexp.Regexp
 	client    *http.Client
 }
-
-const instagramUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 // Pre-compiled regex patterns for Open Graph meta tag extraction
 // These handle multi-line HTML, different quote styles, and attribute ordering
@@ -84,8 +83,7 @@ func (s InstagramService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Medi
 		return result, err
 	}
 
-	req.Header.Set("User-Agent", instagramUserAgent)
-
+	// No specific headers needed
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return result, err
@@ -167,14 +165,7 @@ func (s InstagramService) extractMetadata(incomingURL *IncomingURL) (*instagramM
 		return metadata, err
 	}
 
-	// Set headers to match what curl sends by default
-	req.Header.Set("User-Agent", instagramUserAgent)
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Set("Accept-Encoding", "gzip, deflate, br")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-
+	// No specific headers needed - Instagram serves OG tags without them
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return metadata, err
@@ -191,8 +182,9 @@ func (s InstagramService) extractMetadata(incomingURL *IncomingURL) (*instagramM
 	}
 
 	// Extract Open Graph metadata using pre-compiled patterns
-	metadata.Title = extractOGValue(ogTitleRegex, body)
-	metadata.Description = extractOGValue(ogDescRegex, body)
+	// Decode HTML entities (e.g., &#x4e0a; -> 上)
+	metadata.Title = html.UnescapeString(extractOGValue(ogTitleRegex, body))
+	metadata.Description = html.UnescapeString(extractOGValue(ogDescRegex, body))
 	
 	ogType := extractOGValue(ogTypeRegex, body)
 	if strings.Contains(ogType, "video") {
@@ -212,7 +204,7 @@ func (s InstagramService) extractMetadata(incomingURL *IncomingURL) (*instagramM
 	if metadata.Title == "" {
 		titleRegex := regexp.MustCompile(`<title>([^<]+)</title>`)
 		if titleMatch := titleRegex.FindSubmatch(body); titleMatch != nil && len(titleMatch) > 1 {
-			metadata.Title = string(titleMatch[1])
+			metadata.Title = html.UnescapeString(string(titleMatch[1]))
 			
 			// Extract author from title (Instagram format: "Username on Instagram: ..." or "Username (@handle) • Instagram")
 			if strings.Contains(metadata.Title, " on Instagram:") {
