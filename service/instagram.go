@@ -18,6 +18,8 @@ type InstagramService struct {
 	client    *http.Client
 }
 
+const instagramUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
 func NewInstagramService() *InstagramService {
 	return &InstagramService{
 		Service:   Instagram,
@@ -115,7 +117,7 @@ func (s InstagramService) tryInstagramOEmbed(incomingURL *IncomingURL) ([]*Media
 		return result, err
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", instagramUserAgent)
 
 	resp, err := s.client.Do(req)
 	if err != nil {
@@ -171,11 +173,19 @@ func (s InstagramService) tryInstagramOEmbed(incomingURL *IncomingURL) ([]*Media
 func (s InstagramService) tryDirectMediaURL(incomingURL *IncomingURL) ([]*Media, error) {
 	var result []*Media
 
-	mediaURL := fmt.Sprintf("https://www.instagram.com/p/%s/media/?size=l", incomingURL.StrID)
+	// Determine the path type from the URL (p for posts, reel for reels)
+	pathType := "p"
+	if strings.Contains(incomingURL.URL, "/reel/") {
+		pathType = "reel"
+	}
+	mediaURL := fmt.Sprintf("https://www.instagram.com/%s/%s/media/?size=l", pathType, incomingURL.StrID)
 
 	req, err := http.NewRequest("GET", mediaURL, nil)
 	if err != nil {
 		return result, err
+	}
+
+	req.Header.Set("User-Agent", instagramUserAgent)
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -215,11 +225,19 @@ func (s InstagramService) tryDirectMediaURL(incomingURL *IncomingURL) ([]*Media,
 func (s InstagramService) tryJSONEndpoint(incomingURL *IncomingURL) ([]*Media, error) {
 	var result []*Media
 
-	jsonURL := fmt.Sprintf("https://www.instagram.com/p/%s/?__a=1&__d=dis", incomingURL.StrID)
+	// Determine the path type from the URL (p for posts, reel for reels)
+	pathType := "p"
+	if strings.Contains(incomingURL.URL, "/reel/") {
+		pathType = "reel"
+	}
+	jsonURL := fmt.Sprintf("https://www.instagram.com/%s/%s/?__a=1&__d=dis", pathType, incomingURL.StrID)
 
 	req, err := http.NewRequest("GET", jsonURL, nil)
 	if err != nil {
 		return result, err
+	}
+
+	req.Header.Set("User-Agent", instagramUserAgent)
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -318,7 +336,7 @@ func (s InstagramService) fallbackExtraction(incomingURL *IncomingURL) ([]*Media
 		return result, err
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", instagramUserAgent)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("DNT", "1")
@@ -332,7 +350,7 @@ func (s InstagramService) fallbackExtraction(incomingURL *IncomingURL) ([]*Media
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusForbidden {
-		return result, fmt.Errorf("Instagram returned 403 Forbidden - this may indicate rate limiting or the need for authentication. Consider using Instagram's official API with proper credentials")
+		return result, fmt.Errorf("Instagram returned 403 Forbidden - rate limiting or authentication required")
 	}
 
 	if resp.StatusCode != http.StatusOK {
