@@ -186,23 +186,77 @@ func (s InstagramService) extractMetadata(incomingURL *IncomingURL) (*instagramM
 		return metadata, err
 	}
 
-	// Extract Open Graph metadata using pre-compiled patterns
-	metadata.Title = extractOGValue(ogTitleRegex, body)
-	metadata.Description = extractOGValue(ogDescRegex, body)
+	// Instagram doesn't include Open Graph meta tags in the initial HTML response
+	// when accessed programmatically. Instead, look for embedded JSON data in <title> and page content
+	
+	// Try to extract title from <title> tag
+	titleRegex := regexp.MustCompile(`<title>([^<]+)</title>`)
+	if titleMatch := titleRegex.FindSubmatch(body); titleMatch != nil && len(titleMatch) > 1 {
+		metadata.Title = string(titleMatch[1])
+		
+		// Extract author from title (Instagram format: "Username on Instagram: ..." or "Username (@handle) • Instagram")
+		if strings.Contains(metadata.Title, " on Instagram:") {
+			parts := strings.Split(metadata.Title, " on Instagram:")
+			if len(parts) > 1 {
+				metadata.Author = strings.TrimSpace(parts[0])
+				metadata.Description = strings.TrimSpace(parts[1])
+			}
+		} else if strings.Contains(metadata.Title, " • Instagram") {
+			// Handle format like "Username (@handle) • Instagram photos and videos"
+			parts := strings.Split(metadata.Title, " • Instagram")
+			if len(parts) > 0 {
+				titlePart := strings.TrimSpace(parts[0])
+				// Extract username before (@handle)
+				if strings.Contains(titlePart, " (@") {
+					userParts := strings.Split(titlePart, " (@")
+					if len(userParts) > 1 {
+						metadata.Author = strings.TrimSpace(userParts[0])
+						// Extract handle
+						handlePart := strings.TrimSuffix(userParts[1], ")")
+						metadata.AuthorURL = fmt.Sprintf("https://www.instagram.com/%s/", handlePart)
+					}
+				} else {
+					metadata.Author = titlePart
+				}
+			}
+		}
+	}
+
+	// If we didn't extract AuthorURL from title, construct it from the URL
+	if metadata.AuthorURL == "" && metadata.Author != "" {
+		metadata.AuthorURL = fmt.Sprintf("https://www.instagram.com/%s/", metadata.Author)
+	}
+
+	// Try Open Graph tags as fallback (may work in some cases)
+	if metadata.Title == "" {
+		metadata.Title = extractOGValue(ogTitleRegex, body)
+	}
+	if metadata.Description == "" {
+		metadata.Description = extractOGValue(ogDescRegex, body)
+	}
 	
 	ogType := extractOGValue(ogTypeRegex, body)
 	if strings.Contains(ogType, "video") {
 		metadata.MediaType = "video"
 	}
 
-	// Extract author from title (Instagram format is usually "Username on Instagram: ...")
-	if metadata.Title != "" {
+	// Extract author from OG title if not already extracted
+	if metadata.Author == "" && metadata.Title != "" {
 		parts := strings.Split(metadata.Title, " on Instagram:")
 		if len(parts) > 1 {
 			metadata.Author = strings.TrimSpace(parts[0])
-			metadata.AuthorURL = fmt.Sprintf("https://www.instagram.com/%s/", metadata.Author)
+			if metadata.AuthorURL == "" {
+				metadata.AuthorURL = fmt.Sprintf("https://www.instagram.com/%s/", metadata.Author)
+			}
 		}
 	}
+
+	log.WithFields(log.Fields{
+		"url":         incomingURL.URL,
+		"title":       metadata.Title,
+		"author":      metadata.Author,
+		"description": metadata.Description,
+	}).Debug("Extracted Instagram metadata")
 
 	return metadata, nil
 }
