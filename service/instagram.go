@@ -3,7 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -33,7 +33,12 @@ func (s InstagramService) CheckValid(urlString string) (*IncomingURL, bool) {
 	}
 
 	postID := match[1]
-	normalizedURL := fmt.Sprintf("https://www.instagram.com/p/%s/", postID)
+	// Preserve the original path type (p or reel)
+	pathType := "p"
+	if strings.Contains(urlString, "/reel/") {
+		pathType = "reel"
+	}
+	normalizedURL := fmt.Sprintf("https://www.instagram.com/%s/%s/", pathType, postID)
 
 	return &IncomingURL{
 		Service:  s.Service,
@@ -70,7 +75,7 @@ func (s InstagramService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Medi
 	var result []*Media
 
 	// Try using Instagram's oEmbed API
-	oembedURL := fmt.Sprintf("https://graph.facebook.com/v12.0/instagram_oembed?url=%s&access_token=&fields=thumbnail_url,author_name,author_url,media_id,title",
+	oembedURL := fmt.Sprintf("https://graph.facebook.com/v12.0/instagram_oembed?url=%s&fields=thumbnail_url,author_name,author_url,media_id,title",
 		url.QueryEscape(incomingURL.URL))
 
 	req, err := http.NewRequest("GET", oembedURL, nil)
@@ -95,7 +100,7 @@ func (s InstagramService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Medi
 		return s.fallbackExtraction(incomingURL)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.WithError(err).Error("Failed to read oEmbed response body")
 		return s.fallbackExtraction(incomingURL)
@@ -155,7 +160,7 @@ func (s InstagramService) fallbackExtraction(incomingURL *IncomingURL) ([]*Media
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return result, err
 	}
