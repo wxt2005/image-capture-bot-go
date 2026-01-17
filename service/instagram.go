@@ -18,6 +18,14 @@ type InstagramService struct {
 
 const instagramUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
+// Pre-compiled regex patterns for Open Graph meta tag extraction
+// These handle multi-line HTML, different quote styles, and attribute ordering
+var (
+	ogTitleRegex = regexp.MustCompile(`(?s)<meta[^>]*property\s*=\s*["']og:title["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>|<meta[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:title["'][^>]*>`)
+	ogDescRegex  = regexp.MustCompile(`(?s)<meta[^>]*property\s*=\s*["']og:description["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>|<meta[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:description["'][^>]*>`)
+	ogTypeRegex  = regexp.MustCompile(`(?s)<meta[^>]*property\s*=\s*["']og:type["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>|<meta[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:type["'][^>]*>`)
+)
+
 func NewInstagramService() *InstagramService {
 	return &InstagramService{
 		Service:   Instagram,
@@ -178,39 +186,13 @@ func (s InstagramService) extractMetadata(incomingURL *IncomingURL) (*instagramM
 		return metadata, err
 	}
 
-	// Extract og:title - handle multi-line meta tags
-	// Match property="og:title" followed by content="..." in any order
-	ogTitleRegex := regexp.MustCompile(`(?s)<meta[^>]*property\s*=\s*["']og:title["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>|<meta[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:title["'][^>]*>`)
-	if ogTitleMatch := ogTitleRegex.FindSubmatch(body); ogTitleMatch != nil {
-		if len(ogTitleMatch) > 1 && len(ogTitleMatch[1]) > 0 {
-			metadata.Title = string(ogTitleMatch[1])
-		} else if len(ogTitleMatch) > 2 && len(ogTitleMatch[2]) > 0 {
-			metadata.Title = string(ogTitleMatch[2])
-		}
-	}
-
-	// Extract og:description - handle multi-line meta tags
-	ogDescRegex := regexp.MustCompile(`(?s)<meta[^>]*property\s*=\s*["']og:description["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>|<meta[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:description["'][^>]*>`)
-	if ogDescMatch := ogDescRegex.FindSubmatch(body); ogDescMatch != nil {
-		if len(ogDescMatch) > 1 && len(ogDescMatch[1]) > 0 {
-			metadata.Description = string(ogDescMatch[1])
-		} else if len(ogDescMatch) > 2 && len(ogDescMatch[2]) > 0 {
-			metadata.Description = string(ogDescMatch[2])
-		}
-	}
-
-	// Extract og:type - handle multi-line meta tags
-	ogTypeRegex := regexp.MustCompile(`(?s)<meta[^>]*property\s*=\s*["']og:type["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>|<meta[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:type["'][^>]*>`)
-	if ogTypeMatch := ogTypeRegex.FindSubmatch(body); ogTypeMatch != nil {
-		var ogType string
-		if len(ogTypeMatch) > 1 && len(ogTypeMatch[1]) > 0 {
-			ogType = string(ogTypeMatch[1])
-		} else if len(ogTypeMatch) > 2 && len(ogTypeMatch[2]) > 0 {
-			ogType = string(ogTypeMatch[2])
-		}
-		if strings.Contains(ogType, "video") {
-			metadata.MediaType = "video"
-		}
+	// Extract Open Graph metadata using pre-compiled patterns
+	metadata.Title = extractOGValue(ogTitleRegex, body)
+	metadata.Description = extractOGValue(ogDescRegex, body)
+	
+	ogType := extractOGValue(ogTypeRegex, body)
+	if strings.Contains(ogType, "video") {
+		metadata.MediaType = "video"
 	}
 
 	// Extract author from title (Instagram format is usually "Username on Instagram: ...")
@@ -223,5 +205,21 @@ func (s InstagramService) extractMetadata(incomingURL *IncomingURL) (*instagramM
 	}
 
 	return metadata, nil
+}
+
+// extractOGValue is a helper function to extract the value from Open Graph meta tag regex matches
+// The regex patterns have two capture groups to handle both attribute orderings
+func extractOGValue(pattern *regexp.Regexp, body []byte) string {
+	if match := pattern.FindSubmatch(body); match != nil {
+		// First capture group: property before content
+		if len(match) > 1 && len(match[1]) > 0 {
+			return string(match[1])
+		}
+		// Second capture group: content before property
+		if len(match) > 2 && len(match[2]) > 0 {
+			return string(match[2])
+		}
+	}
+	return ""
 }
 
