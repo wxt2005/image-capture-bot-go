@@ -77,32 +77,67 @@ func (s InstagramService) ExtractMediaFromURL(incomingURL *IncomingURL) ([]*Medi
 	var result []*Media
 
 	// Try method 1: Instagram's own oEmbed API (legacy, but sometimes works)
+	log.WithFields(log.Fields{
+		"url":    incomingURL.URL,
+		"method": "Instagram oEmbed API",
+	}).Debug("Trying Instagram extraction method")
 	result, err := s.tryInstagramOEmbed(incomingURL)
 	if err == nil && len(result) > 0 {
+		log.WithFields(log.Fields{
+			"url":    incomingURL.URL,
+			"method": "Instagram oEmbed API",
+		}).Info("Successfully extracted Instagram media")
 		return result, nil
 	}
 	log.WithError(err).Debug("Instagram oEmbed failed, trying direct media URL")
 
 	// Try method 2: Direct media URL
+	log.WithFields(log.Fields{
+		"url":    incomingURL.URL,
+		"method": "Direct media URL",
+	}).Debug("Trying Instagram extraction method")
 	result, err = s.tryDirectMediaURL(incomingURL)
 	if err == nil && len(result) > 0 {
+		log.WithFields(log.Fields{
+			"url":    incomingURL.URL,
+			"method": "Direct media URL",
+		}).Info("Successfully extracted Instagram media")
 		return result, nil
 	}
 	log.WithError(err).Debug("Direct media URL failed, trying JSON endpoint")
 
 	// Try method 3: JSON endpoint with __a parameter
+	log.WithFields(log.Fields{
+		"url":    incomingURL.URL,
+		"method": "JSON endpoint",
+	}).Debug("Trying Instagram extraction method")
 	result, err = s.tryJSONEndpoint(incomingURL)
 	if err == nil && len(result) > 0 {
+		log.WithFields(log.Fields{
+			"url":    incomingURL.URL,
+			"method": "JSON endpoint",
+		}).Info("Successfully extracted Instagram media")
 		return result, nil
 	}
 	log.WithError(err).Debug("JSON endpoint failed, trying HTML scraping")
 
 	// Try method 4: HTML scraping as last resort
+	log.WithFields(log.Fields{
+		"url":    incomingURL.URL,
+		"method": "HTML scraping",
+	}).Debug("Trying Instagram extraction method")
 	result, err = s.fallbackExtraction(incomingURL)
 	if err == nil && len(result) > 0 {
+		log.WithFields(log.Fields{
+			"url":    incomingURL.URL,
+			"method": "HTML scraping",
+		}).Info("Successfully extracted Instagram media")
 		return result, nil
 	}
 
+	log.WithFields(log.Fields{
+		"url": incomingURL.URL,
+	}).Error("All Instagram extraction methods failed")
 	return result, fmt.Errorf("all extraction methods failed for Instagram URL: %s", incomingURL.URL)
 }
 
