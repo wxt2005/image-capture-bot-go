@@ -32,6 +32,9 @@ danbooru:
 bluesky:
   # No authentication required for public posts
 
+instagram:
+  # No authentication required for public posts
+
 s3:
   bucket:
   region: ap-northeast-1
