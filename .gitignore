@@ -7,3 +7,4 @@ image-capture-bot-go
 .vscode
 tmp
 vendor/*
+.DS_Store
