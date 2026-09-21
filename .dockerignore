@@ -1,3 +1,12 @@
 .git
-config.yml
+.github
+.vscode
+.DS_Store
+.air.conf
+*.md
 *.db
+config.yml
+bin
+tmp
+app
+image-capture-bot-go

@@ -1,61 +1,35 @@
-FROM ubuntu:jammy
+ARG GO_VERSION=1.25
+ARG ALPINE_VERSION=3.22
 
-ARG LIBVIPS_VERSION=8.13.3
-ARG GO_VERSION=1.25.5
+# ---- build stage ----
+FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
+
+# bimg needs cgo + libvips headers at compile time
+RUN apk add --no-cache build-base pkgconf vips-dev
+
+WORKDIR /src
+
+# Download modules first so this layer is cached until go.mod/go.sum change.
+# local-vendor is referenced by a replace directive in go.mod.
+COPY go.mod go.sum ./
+COPY local-vendor ./local-vendor
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
+COPY . .
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -trimpath -ldflags="-s -w" -o /app .
+
+# ---- runtime stage ----
+FROM alpine:${ALPINE_VERSION}
 
 ENV TZ=Asia/Tokyo
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-RUN apt-get update 
-RUN apt-get remove libvips42
-RUN apt-get install -y software-properties-common
-RUN apt-get update && apt-get install -y libcgif-dev
-RUN apt-get install -y \
-    build-essential \
-    ninja-build \
-    python3-pip \
-    bc \
-    wget
-RUN pip3 install meson
-RUN apt-get install -y \
-    pkg-config \
-    glib2.0-dev \
-    libpng-dev \
-    ffmpeg \
-    libfftw3-dev \
-    libopenexr-dev \
-    libgsf-1-dev \
-    libglib2.0-dev \
-    liborc-dev \
-    libopenslide-dev \
-    libmatio-dev \
-    libwebp-dev \
-    libjpeg-turbo8-dev \
-    libexpat1-dev \
-    libexif-dev \
-    libtiff5-dev \
-    libcfitsio-dev \
-    libpoppler-glib-dev \
-    librsvg2-dev \
-    libpango1.0-dev \
-    libopenjp2-7-dev \
-    liblcms2-dev \
-    libimagequant-dev
-RUN wget -O- https://github.com/libvips/libvips/releases/download/v${LIBVIPS_VERSION}/vips-${LIBVIPS_VERSION}.tar.gz | tar xzC /tmp \
-    && cd /tmp/vips-${LIBVIPS_VERSION} \
-    && meson setup build --libdir=lib --buildtype=release -Dintrospection=false \
-    && cd build \
-    && meson compile \
-    && meson test \
-    && meson install \
-    && ldconfig \
-    && rm -rf /tmp/vips-${LIBVIPS_VERSION}
-RUN wget https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-ENV PATH=$PATH:/usr/local/go/bin
 
-RUN mkdir -p /go/image-capture-bot-go
+# vips: runtime libs for bimg; ffmpeg: called as a subprocess by ffmpeg-go
+RUN apk add --no-cache vips ffmpeg tzdata ca-certificates
+
 WORKDIR /go/image-capture-bot-go
-COPY . .
-
-RUN go build -o app .
+COPY --from=builder /app ./app
 
 CMD ["./app"]
